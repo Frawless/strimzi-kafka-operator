@@ -44,7 +44,7 @@ import java.util.Map;
 public class KafkaBridgeCluster extends AbstractModel {
 
     // Port configuration
-    protected static final int DEFAULT_REST_API_PORT = 8080;
+    public static final int DEFAULT_REST_API_PORT = 8080;
     protected static final String REST_API_PORT_NAME = "rest-api";
 
     protected static final int HEALTH_CHECK_PORT = 8081;
@@ -524,5 +524,9 @@ public class KafkaBridgeCluster extends AbstractModel {
      */
     protected void setBootstrapServers(String bootstrapServers) {
         this.bootstrapServers = bootstrapServers;
+    }
+
+    public KafkaBridgeHttpConfig getHttp() {
+        return this.http;
     }
 }

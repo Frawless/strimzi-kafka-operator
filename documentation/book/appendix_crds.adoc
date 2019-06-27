@@ -2009,7 +2009,7 @@ Used in: xref:type-KafkaBridge-{context}[`KafkaBridge`]
 |xref:type-Condition-{context}[`Condition`] array
 |observedGeneration  1.2+<.<|The generation of the CRD which was last reconciled by the operator.
 |integer
-|field               1.2+<.<|Field.
+|httpAddress         1.2+<.<|HTTP address where the bridge is available.
 |string
 |====
 
