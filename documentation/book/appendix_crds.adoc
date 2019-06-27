@@ -1048,7 +1048,7 @@ Used in: xref:type-Kafka-{context}[`Kafka`]
 [id='type-Condition-{context}']
 ### `Condition` schema reference
 
-Used in: xref:type-KafkaStatus-{context}[`KafkaStatus`], xref:type-KafkaUserStatus-{context}[`KafkaUserStatus`]
+Used in: xref:type-KafkaBridgeStatus-{context}[`KafkaBridgeStatus`], xref:type-KafkaStatus-{context}[`KafkaStatus`], xref:type-KafkaUserStatus-{context}[`KafkaUserStatus`]
 
 
 [options="header"]
@@ -1822,9 +1822,11 @@ Used in: xref:type-KafkaMirrorMakerSpec-{context}[`KafkaMirrorMakerSpec`]
 
 [options="header"]
 |====
-|Property     |Description
-|spec  1.2+<.<|The specification of the Kafka Bridge.
+|Property       |Description
+|spec    1.2+<.<|The specification of the Kafka Bridge.
 |xref:type-KafkaBridgeSpec-{context}[`KafkaBridgeSpec`]
+|status  1.2+<.<|The status of the Kafka Bridge.
+|xref:type-KafkaBridgeStatus-{context}[`KafkaBridgeStatus`]
 |====
 
 [id='type-KafkaBridgeSpec-{context}']
@@ -1992,5 +1994,22 @@ Used in: xref:type-KafkaBridgeSpec-{context}[`KafkaBridgeSpec`]
 |xref:type-ResourceTemplate-{context}[`ResourceTemplate`]
 |podDisruptionBudget  1.2+<.<|Template for Kafka Bridge `PodDisruptionBudget`.
 |xref:type-PodDisruptionBudgetTemplate-{context}[`PodDisruptionBudgetTemplate`]
+|====
+
+[id='type-KafkaBridgeStatus-{context}']
+### `KafkaBridgeStatus` schema reference
+
+Used in: xref:type-KafkaBridge-{context}[`KafkaBridge`]
+
+
+[options="header"]
+|====
+|Property                   |Description
+|conditions          1.2+<.<|List of status conditions.
+|xref:type-Condition-{context}[`Condition`] array
+|observedGeneration  1.2+<.<|The generation of the CRD which was last reconciled by the operator.
+|integer
+|field               1.2+<.<|Field.
+|string
 |====
 
