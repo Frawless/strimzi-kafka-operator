@@ -57,7 +57,7 @@ import static io.strimzi.operator.cluster.model.ModelUtils.createHttpProbe;
 public class KafkaConnectCluster extends AbstractModel {
 
     // Port configuration
-    protected static final int REST_API_PORT = 8083;
+    public static final int REST_API_PORT = 8083;
     protected static final String REST_API_PORT_NAME = "rest-api";
 
     private static final String NAME_SUFFIX = "-connect";
