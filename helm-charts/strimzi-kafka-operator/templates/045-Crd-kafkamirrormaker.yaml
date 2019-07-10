@@ -774,6 +774,4 @@ spec:
                     type: string
             observedGeneration:
               type: integer
-            name:
-              type: string
 {{- end -}}

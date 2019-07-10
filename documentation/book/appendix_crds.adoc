@@ -1831,8 +1831,6 @@ Used in: xref:type-KafkaMirrorMaker-{context}[`KafkaMirrorMaker`]
 |xref:type-Condition-{context}[`Condition`] array
 |observedGeneration  1.2+<.<|The generation of the CRD which was last reconciled by the operator.
 |integer
-|name                1.2+<.<|Name.
-|string
 |====
 
 [id='type-KafkaBridge-{context}']
