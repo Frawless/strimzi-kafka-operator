@@ -152,7 +152,7 @@ public class KafkaConnectS2IAssemblyOperator extends AbstractAssemblyOperator<Op
                 KafkaConnectS2I connect = getRes.result();
 
                 if (connect != null) {
-                    if ("kafka.strimzi.io/v1alpha1".equals(connect.getApiVersion())) {
+                    if (StatusUtils.isResourceV1alpha1(connect)) {
                         log.warn("{}: The resource needs to be upgraded from version {} to 'v1beta1' to use the status field", reconciliation, connect.getApiVersion());
                         updateStatusFuture.complete();
                     } else {
