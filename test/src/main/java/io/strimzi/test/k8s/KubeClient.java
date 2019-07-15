@@ -270,6 +270,7 @@ public class KubeClient {
      * Gets deployment
      */
     public Deployment getDeployment(String deploymentName) {
+        LOGGER.info("Deployment {} in namespace {}", deploymentName, getNamespace());
         return client.apps().deployments().inNamespace(getNamespace()).withName(deploymentName).get();
     }
 
@@ -342,6 +343,7 @@ public class KubeClient {
     }
 
     public Service getService(String serviceName) {
+        LOGGER.info("Service {} in namespace {}", serviceName, getNamespace());
         return client.services().inNamespace(getNamespace()).withName(serviceName).get();
     }
 

@@ -211,7 +211,8 @@ class RecoveryST extends AbstractST {
         operationID = startTimeMeasuring(Operation.CLUSTER_RECOVERY);
         LOGGER.info("Running deleteKafkaBridgeService with cluster {}", CLUSTER_NAME);
         String kafkaBridgeServiceName = KafkaBridgeResources.serviceName(CLUSTER_NAME);
-        String kafkaBridgeServiceUid = kubeClient().getServiceUid(kafkaBridgeServiceName);
+        LOGGER.info("Namespace: {}", kubeClient().getNamespace());
+        String kafkaBridgeServiceUid = kubeClient().namespace(NAMESPACE).getServiceUid(kafkaBridgeServiceName);
         kubeClient().deleteService(kafkaBridgeServiceName);
 
         LOGGER.info("Waiting for service {} recovery", kafkaBridgeServiceName);

@@ -284,7 +284,7 @@ public class StUtils {
      * @param name The name of the Deployment.
      */
     public static void waitForDeploymentRecovery(String name, String deploymentUid) {
-        LOGGER.info("Waiting for Deployment {} recovery", name);
+        LOGGER.info("Waiting for Deployment {}-{} recovery in namespace {}", name, deploymentUid, kubeClient().getNamespace());
         TestUtils.waitFor("deployment " + name + " to be recovered", Constants.POLL_INTERVAL_FOR_RESOURCE_READINESS, Constants.TIMEOUT_FOR_RESOURCE_READINESS,
             () -> !kubeClient().getDeploymentUid(name).equals(deploymentUid));
         LOGGER.info("Deployment {} was recovered", name);
@@ -342,7 +342,7 @@ public class StUtils {
      * @param name The name of the StatefulSet.
      */
     public static void waitForStatefulSetRecovery(String name, String statefulSetUid) {
-        LOGGER.info("Waiting for StatefulSet {} recovery", name);
+        LOGGER.info("Waiting for StatefulSet {}-{} recovery in namespace {}", name, statefulSetUid, kubeClient().getNamespace());
         TestUtils.waitFor("StatefulSet " + name + " to be recovered", Constants.POLL_INTERVAL_FOR_RESOURCE_READINESS, Constants.TIMEOUT_FOR_RESOURCE_READINESS,
             () -> !kubeClient().getStatefulSetUid(name).equals(statefulSetUid));
         LOGGER.info("StatefulSet {} was recovered", name);
@@ -364,7 +364,7 @@ public class StUtils {
      * @param name The name of the ConfigMap.
      */
     public static void waitForConfigMapRecovery(String name, String configMapUid) {
-        LOGGER.info("Waiting for config map deletion {}", name);
+        LOGGER.info("Waiting for config map {}-{} recovery in namespace {}", name, configMapUid, kubeClient().getNamespace());
         TestUtils.waitFor("Config map " + name + " to be recovered", Constants.POLL_INTERVAL_FOR_RESOURCE_READINESS, Constants.TIMEOUT_FOR_RESOURCE_READINESS,
             () -> !kubeClient().getConfigMapUid(name).equals(configMapUid));
         LOGGER.info("Config map {} was deleted", name);
@@ -468,7 +468,7 @@ public class StUtils {
      * @param serviceUid service original uid
      */
     public static void waitForServiceRecovery(String serviceName, String serviceUid) {
-        LOGGER.info("Waiting when Service {} in namespace {} is recovered", serviceName, kubeClient().getNamespace());
+        LOGGER.info("Waiting when Service {}-{} in namespace {} is recovered", serviceName, serviceUid, kubeClient().getNamespace());
 
         TestUtils.waitFor("Service " + serviceName + " to be recovered", Constants.POLL_INTERVAL_FOR_RESOURCE_READINESS, Constants.TIMEOUT_FOR_RESOURCE_READINESS,
             () -> !kubeClient().getServiceUid(serviceName).equals(serviceUid));
