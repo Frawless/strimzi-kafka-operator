@@ -104,6 +104,15 @@ public class KubeClient {
         return client.configMaps().inNamespace(getNamespace()).withName(configMapName).get();
     }
 
+    /**
+     * Gets config map uid
+     * @param configMapName config map name
+     * @return config map ui
+     */
+    public String getConfigMapUid(String configMapName) {
+        return getConfigMap(configMapName).getMetadata().getUid();
+    }
+
     public boolean getConfigMapStatus(String configMapName) {
         return client.configMaps().inNamespace(getNamespace()).withName(configMapName).isReady();
     }
@@ -196,13 +205,6 @@ public class KubeClient {
     }
 
     /**
-     * Gets statefulset Uid
-     */
-    public String getSsUid(String name) {
-        return client.apps().statefulSets().inNamespace(getNamespace()).withName(name).get().getMetadata().getUid();
-    }
-
-    /**
      * Deletes pod
      */
     public Boolean deletePod(Pod pod) {
@@ -252,8 +254,8 @@ public class KubeClient {
     /**
      * Gets stateful set Uid
      */
-    public String getStatefulUid(String statefulSetName) {
-        return client.apps().statefulSets().inNamespace(getNamespace()).withName(statefulSetName).get().getMetadata().getUid();
+    public String getStatefulSetUid(String statefulSetName) {
+        return getStatefulSet(statefulSetName).getMetadata().getUid();
     }
 
     public void deleteStatefulSet(String statefulSetName) {
@@ -269,6 +271,13 @@ public class KubeClient {
      */
     public Deployment getDeployment(String deploymentName) {
         return client.apps().deployments().inNamespace(getNamespace()).withName(deploymentName).get();
+    }
+
+    /**
+     * Gets deployment UID
+     */
+    public String getDeploymentUid(String deploymentName) {
+        return getDeployment(deploymentName).getMetadata().getUid();
     }
 
     /**
@@ -334,6 +343,15 @@ public class KubeClient {
 
     public Service getService(String serviceName) {
         return client.services().inNamespace(getNamespace()).withName(serviceName).get();
+    }
+
+    /**
+     * Gets service uid
+     * @param serviceName service name
+     * @return service uid
+     */
+    public String getServiceUid(String serviceName) {
+        return getService(serviceName).getMetadata().getUid();
     }
 
     public boolean getServiceStatus(String serviceName) {
