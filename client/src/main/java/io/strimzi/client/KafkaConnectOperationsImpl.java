@@ -20,9 +20,11 @@ public class KafkaConnectOperationsImpl extends StrimziReadyOperationsImpl<Kafka
     }
 
     public KafkaConnectOperationsImpl(OperationContext context) {
-        super(context.withApiGroupName("kafka.strimzi.io")
-                .withApiGroupVersion("v1beta1")
-                .withPlural("kafkaconnects"));
+        super(context.withApiGroupName(KafkaConnect.RESOURCE_GROUP)
+                .withApiGroupVersion(KafkaConnect.V1BETA1)
+                .withPlural(KafkaConnect.RESOURCE_PLURAL));
+        this.apiGroupName = KafkaConnect.RESOURCE_GROUP;
+        this.apiVersion = KafkaConnect.RESOURCE_GROUP + "/" + KafkaConnect.V1BETA1;
         this.type = KafkaConnect.class;
         this.listType = KafkaConnectList.class;
         this.doneableType = DoneableKafkaConnect.class;
@@ -30,7 +32,10 @@ public class KafkaConnectOperationsImpl extends StrimziReadyOperationsImpl<Kafka
 
     @Override
     protected boolean isReady(KafkaConnect resource) {
-        return resource.getStatus().getConditions().stream().anyMatch(containsReadyCondition());
+        return resource != null
+                && resource.getStatus() != null
+                && resource.getStatus().getConditions() != null
+                && resource.getStatus().getConditions().stream().anyMatch(containsReadyCondition());
     }
 
     @Override

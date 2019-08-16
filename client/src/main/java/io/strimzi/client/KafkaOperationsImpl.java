@@ -20,9 +20,11 @@ public class KafkaOperationsImpl extends StrimziReadyOperationsImpl<Kafka, Kafka
     }
 
     public KafkaOperationsImpl(OperationContext context) {
-        super(context.withApiGroupName("kafka.strimzi.io")
-                .withApiGroupVersion("v1beta1")
-                .withPlural("kafkas"));
+        super(context.withApiGroupName(Kafka.RESOURCE_GROUP)
+                .withApiGroupVersion(Kafka.V1BETA1)
+                .withPlural(Kafka.RESOURCE_PLURAL));
+        this.apiGroupName = Kafka.RESOURCE_GROUP;
+        this.apiVersion = Kafka.RESOURCE_GROUP + "/" + Kafka.V1BETA1;
         this.type = Kafka.class;
         this.listType = KafkaList.class;
         this.doneableType = DoneableKafka.class;
@@ -35,7 +37,11 @@ public class KafkaOperationsImpl extends StrimziReadyOperationsImpl<Kafka, Kafka
 
     @Override
     protected boolean isReady(Kafka resource) {
-        return resource.getStatus().getConditions().stream().anyMatch(containsReadyCondition());
+        return resource != null
+                && resource.getStatus() != null
+                && resource.getStatus().getConditions() != null
+                && resource.getStatus().getConditions().stream().anyMatch(containsReadyCondition());
+
     }
 
 }

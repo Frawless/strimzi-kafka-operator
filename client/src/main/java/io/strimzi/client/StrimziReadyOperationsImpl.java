@@ -7,6 +7,7 @@ package io.strimzi.client;
 import io.fabric8.kubernetes.api.model.Doneable;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.KubernetesClientTimeoutException;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.dsl.Resource;
@@ -69,16 +70,36 @@ public abstract class StrimziReadyOperationsImpl<
     @Override
     public T waitUntilReady(long amount, TimeUnit timeUnit) throws InterruptedException {
 
-        long started = System.nanoTime();
-        waitUntilExists(amount, timeUnit);
-        long alreadySpent = System.nanoTime() - timeUnit.toNanos(started);
+        long startTime = System.currentTimeMillis();
+        long deadline = startTime + timeUnit.toMillis(amount);
+        T item = null;
+        do {
+            item = get();
+            if (item != null) {
+                break;
+            }
 
-        long remaining = timeUnit.toNanos(amount) - alreadySpent;
-        if (remaining <= 0) {
-            return periodicWatchUntilReady(0, System.nanoTime(), 0, 0);
+            // in the future, this should probably be more intelligent
+            Thread.sleep(1000);
+        } while (System.currentTimeMillis() < deadline);
+        if (item == null) {
+            throw new KubernetesClientException("");
         }
+        if (isReady(item)) {
+            return item;
+        }
+        ReadinessWatcher<T> watcher = new ReadinessWatcher<>(this, item);
+        try (Watch watch = watch(watcher)) {
 
-        return periodicWatchUntilReady(10, System.nanoTime(), Math.max(remaining / 10, 1000L), remaining);
+            long taken = System.currentTimeMillis() - startTime;
+            long remaining = timeUnit.toMillis(amount) - taken;
+            T await = watcher.await(remaining, TimeUnit.MILLISECONDS);
+            if (await != null) {
+                return await;
+            } else {
+                throw new KubernetesClientTimeoutException(item, remaining, TimeUnit.NANOSECONDS);
+            }
+        }
 
     }
 

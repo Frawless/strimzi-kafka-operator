@@ -9,7 +9,6 @@ import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.OperationContext;
 import io.strimzi.api.kafka.KafkaTopicList;
 import io.strimzi.api.kafka.model.DoneableKafkaTopic;
-import io.strimzi.api.kafka.model.KafkaConnectS2I;
 import io.strimzi.api.kafka.model.KafkaTopic;
 import okhttp3.OkHttpClient;
 
@@ -21,9 +20,11 @@ public class KafkaTopicOperationsImpl extends StrimziReadyOperationsImpl<KafkaTo
     }
 
     public KafkaTopicOperationsImpl(OperationContext context) {
-        super(context.withApiGroupName("kafka.strimzi.io")
-                .withApiGroupVersion("v1beta1")
-                .withPlural("kafkatopics"));
+        super(context.withApiGroupName(KafkaTopic.RESOURCE_GROUP)
+                .withApiGroupVersion(KafkaTopic.V1BETA1)
+                .withPlural(KafkaTopic.RESOURCE_PLURAL));
+        this.apiGroupName = KafkaTopic.RESOURCE_GROUP;
+        this.apiVersion = KafkaTopic.RESOURCE_GROUP + "/" + KafkaTopic.V1BETA1;
         this.type = KafkaTopic.class;
         this.listType = KafkaTopicList.class;
         this.doneableType = DoneableKafkaTopic.class;
@@ -36,7 +37,10 @@ public class KafkaTopicOperationsImpl extends StrimziReadyOperationsImpl<KafkaTo
 
     @Override
     protected boolean isReady(KafkaTopic resource) {
-        return resource.getStatus().getConditions().stream().anyMatch(containsReadyCondition());
+        return resource != null
+                && resource.getStatus() != null
+                && resource.getStatus().getConditions() != null
+                && resource.getStatus().getConditions().stream().anyMatch(containsReadyCondition());
     }
 
 }

@@ -20,9 +20,11 @@ public class KafkaMirrorMakerOperationsImpl extends StrimziReadyOperationsImpl<K
     }
 
     public KafkaMirrorMakerOperationsImpl(OperationContext context) {
-        super(context.withApiGroupName("kafka.strimzi.io")
-                .withApiGroupVersion("v1beta1")
-                .withPlural("kafkamirrormakers"));
+        super(context.withApiGroupName(KafkaMirrorMaker.RESOURCE_GROUP)
+                .withApiGroupVersion(KafkaMirrorMaker.V1BETA1)
+                .withPlural(KafkaMirrorMaker.RESOURCE_PLURAL));
+        this.apiGroupName = KafkaMirrorMaker.RESOURCE_GROUP;
+        this.apiVersion = KafkaMirrorMaker.RESOURCE_GROUP + "/" + KafkaMirrorMaker.V1BETA1;
         this.type = KafkaMirrorMaker.class;
         this.listType = KafkaMirrorMakerList.class;
         this.doneableType = DoneableKafkaMirrorMaker.class;
@@ -35,7 +37,10 @@ public class KafkaMirrorMakerOperationsImpl extends StrimziReadyOperationsImpl<K
 
     @Override
     protected boolean isReady(KafkaMirrorMaker resource) {
-        return resource.getStatus().getConditions().stream().anyMatch(containsReadyCondition());
+        return resource != null
+                && resource.getStatus() != null
+                && resource.getStatus().getConditions() != null
+                && resource.getStatus().getConditions().stream().anyMatch(containsReadyCondition());
     }
 
 }

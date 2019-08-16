@@ -41,13 +41,4 @@ public class DefaultStrimziOpenShiftClient
         return adapt(StrimziOpenShiftAPIGroupDSL.class);
     }
 
-    public static void main(String[] a) {
-        KubernetesClient kc = new DefaultKubernetesClient();
-        StrimziOpenShiftClient sc = kc.adapt(StrimziOpenShiftClient.class);
-        StrimziKubernetesAPIGroupDSL strimzi = sc.strimzi();
-        MixedOperation<Kafka, KafkaList, DoneableKafka, Resource<Kafka, DoneableKafka>> kafka = strimzi.kafka();
-        kafka.inNamespace("myproject").list().getItems().stream().forEach(k ->
-                System.out.println(k));
-    }
-
 }

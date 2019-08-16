@@ -1,2 +1,3 @@
-io.strimzi.operator.fabric8.StrimziKubernetesExtensionAdapter
-io.strimzi.operator.fabric8.StrimziAPIGroupExtensionAdapter
+io.strimzi.client.StrimziKubernetesExtensionAdapter
+io.strimzi.client.StrimziOpenShiftExtensionAdapter
+io.strimzi.client.StrimziKubernetesAPIGroupExtensionAdapter

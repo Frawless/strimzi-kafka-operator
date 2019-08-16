@@ -4,13 +4,7 @@
  */
 package io.strimzi.client;
 
-import io.fabric8.kubernetes.client.KubernetesClientTimeoutException;
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient;
-import io.fabric8.kubernetes.client.Watch;
-import io.fabric8.kubernetes.client.internal.readiness.Readiness;
-import io.fabric8.kubernetes.client.internal.readiness.ReadinessWatcher;
-
-import java.util.concurrent.TimeUnit;
 
 public interface StrimziKubernetesClient extends NamespacedKubernetesClient {
 

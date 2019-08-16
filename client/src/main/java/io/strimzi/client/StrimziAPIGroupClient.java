@@ -10,7 +10,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import io.strimzi.api.kafka.Crds;
+import io.strimzi.api.kafka.KafkaBridgeList;
 import io.strimzi.api.kafka.KafkaConnectList;
 import io.strimzi.api.kafka.KafkaConnectS2IList;
 import io.strimzi.api.kafka.KafkaList;
@@ -18,12 +18,14 @@ import io.strimzi.api.kafka.KafkaMirrorMakerList;
 import io.strimzi.api.kafka.KafkaTopicList;
 import io.strimzi.api.kafka.KafkaUserList;
 import io.strimzi.api.kafka.model.DoneableKafka;
+import io.strimzi.api.kafka.model.DoneableKafkaBridge;
 import io.strimzi.api.kafka.model.DoneableKafkaConnect;
 import io.strimzi.api.kafka.model.DoneableKafkaConnectS2I;
 import io.strimzi.api.kafka.model.DoneableKafkaMirrorMaker;
 import io.strimzi.api.kafka.model.DoneableKafkaTopic;
 import io.strimzi.api.kafka.model.DoneableKafkaUser;
 import io.strimzi.api.kafka.model.Kafka;
+import io.strimzi.api.kafka.model.KafkaBridge;
 import io.strimzi.api.kafka.model.KafkaConnect;
 import io.strimzi.api.kafka.model.KafkaConnectS2I;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker;
@@ -37,11 +39,8 @@ import okhttp3.OkHttpClient;
  */
 class StrimziAPIGroupClient extends BaseClient implements StrimziOpenShiftAPIGroupDSL {
 
-    private final KubernetesClient kc;
-
     public StrimziAPIGroupClient(KubernetesClient kc, final Config config) throws KubernetesClientException {
         super(kc.adapt(OkHttpClient.class), config);
-        this.kc = kc;
     }
 
     @Override
@@ -70,7 +69,12 @@ class StrimziAPIGroupClient extends BaseClient implements StrimziOpenShiftAPIGro
     }
 
     @Override
+    public MixedOperation<KafkaBridge, KafkaBridgeList, DoneableKafkaBridge, Resource<KafkaBridge, DoneableKafkaBridge>> kafkaBridge() {
+        return new KafkaBridgeOperationsImpl(httpClient, getConfiguration());
+    }
+
+    @Override
     public MixedOperation<KafkaConnectS2I, KafkaConnectS2IList, DoneableKafkaConnectS2I, Resource<KafkaConnectS2I, DoneableKafkaConnectS2I>> kafkaConnectS2i() {
-        return Crds.kafkaConnectS2iOperation(kc);
+        return new KafkaConnectS2IOperationsImpl(httpClient, getConfiguration());
     }
 }

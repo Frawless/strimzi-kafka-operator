@@ -34,11 +34,4 @@ public class DefaultStrimziKubernetesClient
         return adapt(StrimziAPIGroupClient.class);
     }
 
-    public static void main(String[] a) {
-        KubernetesClient kc = new DefaultKubernetesClient();
-        StrimziKubernetesClient client = kc.adapt(StrimziKubernetesClient.class);
-        client.strimzi().kafka().inNamespace("myproject").list().getItems().stream().forEach(k ->
-                System.out.println(k));
-    }
-
 }
