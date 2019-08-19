@@ -97,7 +97,7 @@ class AllNamespaceST extends AbstractNamespaceST {
         secondNamespaceResources.tlsUser(CLUSTER_NAME, USER_NAME).done();
 
         StUtils.waitForSecretReady(USER_NAME);
-        Condition kafkaCondition = secondNamespaceResources.kafkaUser().inNamespace(SECOND_NAMESPACE).withName(USER_NAME).get()
+        Condition kafkaCondition = strimziKubernetesClient().kafkaUser().inNamespace(SECOND_NAMESPACE).withName(USER_NAME).get()
                 .getStatus().getConditions().get(0);
         LOGGER.info("Kafka User condition status: {}", kafkaCondition.getStatus());
         LOGGER.info("Kafka User condition type: {}", kafkaCondition.getType());

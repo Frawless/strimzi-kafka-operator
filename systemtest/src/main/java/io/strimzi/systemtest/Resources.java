@@ -26,10 +26,10 @@ import io.fabric8.kubernetes.api.model.extensions.Ingress;
 import io.fabric8.kubernetes.api.model.extensions.IngressBackend;
 import io.fabric8.kubernetes.api.model.extensions.IngressBuilder;
 import io.fabric8.kubernetes.api.model.extensions.IngressRuleBuilder;
-import io.fabric8.kubernetes.api.model.rbac.DoneableClusterRoleBinding;
-import io.fabric8.kubernetes.api.model.rbac.DoneableRoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBindingBuilder;
+import io.fabric8.kubernetes.api.model.rbac.DoneableClusterRoleBinding;
+import io.fabric8.kubernetes.api.model.rbac.DoneableRoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.RoleBindingBuilder;
 import io.fabric8.kubernetes.api.model.rbac.SubjectBuilder;
@@ -86,11 +86,14 @@ import java.util.Optional;
 import java.util.Stack;
 import java.util.stream.IntStream;
 
+import static io.strimzi.systemtest.AbstractST.strimziKubernetesClient;
+import static io.strimzi.systemtest.AbstractST.strimziOpenShiftClient;
 import static io.strimzi.systemtest.AbstractST.CLUSTER_NAME;
 import static io.strimzi.test.TestUtils.toYamlString;
 
 @SuppressWarnings({"checkstyle:ClassDataAbstractionCoupling", "checkstyle:ClassFanOutComplexity"})
-public class Resources extends AbstractResources {
+public class Resources {
+    private final KubeClient client;
 
     private static final Logger LOGGER = LogManager.getLogger(Resources.class);
     private static final String KAFKA_VERSION = Environment.ST_KAFKA_VERSION;
@@ -108,7 +111,11 @@ public class Resources extends AbstractResources {
     private Stack<Runnable> resources = new Stack<>();
 
     Resources(KubeClient client) {
-        super(client);
+        this.client = client;
+    }
+
+    KubeClient client() {
+        return client;
     }
 
     @SuppressWarnings("unchecked")
@@ -218,51 +225,51 @@ public class Resources extends AbstractResources {
     }
 
     private Kafka deleteLater(Kafka resource) {
-        return deleteLater(kafka(), resource);
+        return deleteLater(strimziKubernetesClient().kafka(), resource);
     }
 
     private KafkaConnect deleteLater(KafkaConnect resource) {
-        return deleteLater(kafkaConnect(), resource);
+        return deleteLater(strimziKubernetesClient().kafkaConnect(), resource);
     }
 
     private KafkaConnectS2I deleteLater(KafkaConnectS2I resource) {
-        return deleteLater(kafkaConnectS2I(), resource);
+        return deleteLater(strimziOpenShiftClient().kafkaConnectS2i(), resource);
     }
 
     private KafkaMirrorMaker deleteLater(KafkaMirrorMaker resource) {
-        return deleteLater(kafkaMirrorMaker(), resource);
+        return deleteLater(strimziKubernetesClient().kafkaMirrorMaker(), resource);
     }
 
     private KafkaBridge deleteLater(KafkaBridge resource) {
-        return deleteLater(kafkaBridge(), resource);
+        return deleteLater(strimziKubernetesClient().kafkaBridge(), resource);
     }
 
     private KafkaTopic deleteLater(KafkaTopic resource) {
-        return deleteLater(kafkaTopic(), resource);
+        return deleteLater(strimziKubernetesClient().kafkaTopic(), resource);
     }
 
     private KafkaUser deleteLater(KafkaUser resource) {
-        return deleteLater(kafkaUser(), resource);
+        return deleteLater(strimziKubernetesClient().kafkaUser(), resource);
     }
 
     private Deployment deleteLater(Deployment resource) {
-        return deleteLater(deployment(), resource);
+        return deleteLater(client().getClient().apps().deployments(), resource);
     }
 
     private ClusterRoleBinding deleteLater(ClusterRoleBinding resource) {
-        return deleteLater(clusterRoleBinding(), resource);
+        return deleteLater(client().getClient().rbac().clusterRoleBindings(), resource);
     }
 
     private RoleBinding deleteLater(RoleBinding resource) {
-        return deleteLater(roleBinding(), resource);
+        return deleteLater(client().getClient().rbac().roleBindings(), resource);
     }
 
     private Service deleteLater(Service resource) {
-        return deleteLater(service(), resource);
+        return deleteLater(client().getClient().services(), resource);
     }
 
     private Ingress deleteLater(Ingress resource) {
-        return deleteLater(ingress(), resource);
+        return deleteLater(client().getClient().extensions().ingresses(), resource);
     }
 
     void deleteResources() {
@@ -375,11 +382,12 @@ public class Resources extends AbstractResources {
     }
 
     DoneableKafka kafka(Kafka kafka) {
+        LOGGER.info("cajk");
         return new DoneableKafka(kafka, k -> {
             TestUtils.waitFor("Kafka creation", Constants.POLL_INTERVAL_FOR_RESOURCE_CREATION, Constants.TIMEOUT_FOR_CR_CREATION,
                 () -> {
                     try {
-                        kafka().inNamespace(client().getNamespace()).createOrReplace(k);
+                        strimziKubernetesClient().kafka().inNamespace(client().getNamespace()).createOrReplace(k);
                         return true;
                     } catch (KubernetesClientException e) {
                         if (e.getMessage().contains("object is being deleted")) {
@@ -475,7 +483,7 @@ public class Resources extends AbstractResources {
             TestUtils.waitFor("KafkaConnect creation", Constants.POLL_INTERVAL_FOR_RESOURCE_CREATION, Constants.TIMEOUT_FOR_CR_CREATION,
                 () -> {
                     try {
-                        kafkaConnect().inNamespace(client().getNamespace()).createOrReplace(kC);
+                        strimziKubernetesClient().kafkaConnect().inNamespace(client().getNamespace()).createOrReplace(kC);
                         return true;
                     } catch (KubernetesClientException e) {
                         if (e.getMessage().contains("object is being deleted")) {
@@ -518,7 +526,7 @@ public class Resources extends AbstractResources {
             TestUtils.waitFor("KafkaConnectS2I creation", Constants.POLL_INTERVAL_FOR_RESOURCE_CREATION, Constants.TIMEOUT_FOR_CR_CREATION,
                 () -> {
                     try {
-                        kafkaConnectS2I().inNamespace(client().getNamespace()).createOrReplace(kCS2I);
+                        strimziOpenShiftClient().kafkaConnectS2i().inNamespace(client().getNamespace()).createOrReplace(kCS2I);
                         return true;
                     } catch (KubernetesClientException e) {
                         if (e.getMessage().contains("object is being deleted")) {
@@ -565,7 +573,7 @@ public class Resources extends AbstractResources {
             TestUtils.waitFor("Kafka Mirror Maker creation", Constants.POLL_INTERVAL_FOR_RESOURCE_CREATION, Constants.TIMEOUT_FOR_CR_CREATION,
                 () -> {
                     try {
-                        kafkaMirrorMaker().inNamespace(client().getNamespace()).createOrReplace(k);
+                        strimziKubernetesClient().kafkaMirrorMaker().inNamespace(client().getNamespace()).createOrReplace(k);
                         return true;
                     } catch (KubernetesClientException e) {
                         if (e.getMessage().contains("object is being deleted")) {
@@ -735,7 +743,7 @@ public class Resources extends AbstractResources {
 
     DoneableKafkaTopic topic(KafkaTopic topic) {
         return new DoneableKafkaTopic(topic, kt -> {
-            KafkaTopic resource = kafkaTopic().inNamespace(topic.getMetadata().getNamespace()).create(kt);
+            KafkaTopic resource = strimziKubernetesClient().kafkaTopic().inNamespace(topic.getMetadata().getNamespace()).create(kt);
             LOGGER.info("Created KafkaTopic {}", resource.getMetadata().getName());
             return deleteLater(resource);
         });
@@ -773,7 +781,7 @@ public class Resources extends AbstractResources {
 
     DoneableKafkaUser user(KafkaUser user) {
         return new DoneableKafkaUser(user, ku -> {
-            KafkaUser resource = kafkaUser().inNamespace(client().getNamespace()).createOrReplace(ku);
+            KafkaUser resource = strimziKubernetesClient().kafkaUser().inNamespace(client().getNamespace()).createOrReplace(ku);
             LOGGER.info("Created KafkaUser {}", resource.getMetadata().getName());
             return deleteLater(resource);
         });
@@ -1256,7 +1264,7 @@ public class Resources extends AbstractResources {
             TestUtils.waitFor("KafkaBridge creation", Constants.POLL_INTERVAL_FOR_RESOURCE_CREATION, Constants.TIMEOUT_FOR_CR_CREATION,
                 () -> {
                     try {
-                        kafkaBridge().inNamespace(client().getNamespace()).createOrReplace(kB);
+                        strimziKubernetesClient().kafkaBridge().inNamespace(client().getNamespace()).createOrReplace(kB);
                         return true;
                     } catch (KubernetesClientException e) {
                         if (e.getMessage().contains("object is being deleted")) {

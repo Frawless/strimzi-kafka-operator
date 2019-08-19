@@ -36,6 +36,10 @@ import io.strimzi.api.kafka.model.KafkaMirrorMaker;
 import io.strimzi.api.kafka.model.KafkaResources;
 import io.strimzi.api.kafka.model.KafkaTopic;
 import io.strimzi.api.kafka.model.KafkaUser;
+import io.strimzi.client.DefaultStrimziKubernetesClient;
+import io.strimzi.client.DefaultStrimziOpenShiftClient;
+import io.strimzi.client.StrimziKubernetesAPIGroupDSL;
+import io.strimzi.client.StrimziOpenShiftAPIGroupDSL;
 import io.strimzi.systemtest.clients.lib.KafkaClient;
 import io.strimzi.systemtest.interfaces.TestSeparator;
 import io.strimzi.systemtest.utils.TestExecutionWatcher;
@@ -128,6 +132,14 @@ public abstract class AbstractST extends BaseITST implements TestSeparator {
 
     protected HelmClient helmClient() {
         return kubeCluster().helmClient().namespace(getNamespace());
+    }
+
+    public static StrimziKubernetesAPIGroupDSL strimziKubernetesClient() {
+        return kubeClient().getClient().adapt(DefaultStrimziKubernetesClient.class).strimzi();
+    }
+
+    public static StrimziOpenShiftAPIGroupDSL strimziOpenShiftClient() {
+        return kubeClient().getClient().adapt(DefaultStrimziOpenShiftClient.class).strimzi();
     }
 
     static String kafkaClusterName(String clusterName) {

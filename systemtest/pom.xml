@@ -20,6 +20,10 @@
             <artifactId>api</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.strimzi</groupId>
+            <artifactId>client</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-core</artifactId>
             <scope>compile</scope>

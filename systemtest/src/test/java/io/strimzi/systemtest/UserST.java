@@ -147,7 +147,7 @@ class UserST extends AbstractST {
             }
             StUtils.waitForSecretReady(userName);
             LOGGER.info("Checking status of deployed Kafka User {}", userName);
-            Condition kafkaCondition = testMethodResources().kafkaUser().inNamespace(NAMESPACE).withName(userName).get()
+            Condition kafkaCondition = strimziKubernetesClient().kafkaUser().inNamespace(NAMESPACE).withName(userName).get()
                     .getStatus().getConditions().get(0);
             LOGGER.info("Kafka User condition status: {}", kafkaCondition.getStatus());
             LOGGER.info("Kafka User condition type: {}", kafkaCondition.getType());
@@ -157,6 +157,7 @@ class UserST extends AbstractST {
     }
 
     private void deployTestSpecificResources() {
+        LOGGER.info("test");
         testClassResources().kafka(testClassResources().defaultKafka(CLUSTER_NAME, 1, 1)
                 .editSpec()
                     .editKafka()

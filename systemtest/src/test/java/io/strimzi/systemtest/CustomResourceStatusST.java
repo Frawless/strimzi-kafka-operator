@@ -82,7 +82,7 @@ class CustomResourceStatusST extends AbstractST {
         testClassResources().tlsUser(CLUSTER_NAME, userName).done();
         StUtils.waitForSecretReady(userName);
         LOGGER.info("Checking status of deployed kafka user");
-        Condition kafkaCondition = testClassResources().kafkaUser().inNamespace(NAMESPACE).withName(userName).get().getStatus().getConditions().get(0);
+        Condition kafkaCondition = strimziKubernetesClient().kafkaUser().inNamespace(NAMESPACE).withName(userName).get().getStatus().getConditions().get(0);
         LOGGER.info("Kafka User Status: {}", kafkaCondition.getStatus());
         LOGGER.info("Kafka User Type: {}", kafkaCondition.getType());
         assertThat("Kafka user is in wrong state!", kafkaCondition.getType(), is("Ready"));
@@ -99,7 +99,7 @@ class CustomResourceStatusST extends AbstractST {
         StUtils.waitForKafkaUserCreationError(userName, eoPodName);
 
         LOGGER.info("Checking status of deployed Kafka User {}", userName);
-        Condition kafkaCondition = testMethodResources().kafkaUser().inNamespace(NAMESPACE).withName(userName).get().getStatus().getConditions().get(0);
+        Condition kafkaCondition = strimziKubernetesClient().kafkaUser().inNamespace(NAMESPACE).withName(userName).get().getStatus().getConditions().get(0);
         LOGGER.info("Kafka User Status: {}", kafkaCondition.getStatus());
         LOGGER.info("Kafka User Type: {}", kafkaCondition.getType());
         LOGGER.info("Kafka User Message: {}", kafkaCondition.getMessage());
@@ -274,7 +274,7 @@ class CustomResourceStatusST extends AbstractST {
     void waitForKafkaStatus(String status) {
         LOGGER.info("Wait until Kafka cluster is in desired state: {}", status);
         TestUtils.waitFor("Kafka Cluster status is not in desired state: " + status, Constants.GLOBAL_POLL_INTERVAL, Constants.GLOBAL_STATUS_TIMEOUT, () -> {
-            Condition kafkaCondition = testClassResources().kafka().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus().getConditions().get(0);
+            Condition kafkaCondition = strimziKubernetesClient().kafka().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus().getConditions().get(0);
             logCurrentStatus(kafkaCondition, Kafka.RESOURCE_KIND);
             return kafkaCondition.getType().equals(status);
         });
@@ -284,7 +284,7 @@ class CustomResourceStatusST extends AbstractST {
     void waitForKafkaMirrorMakerStatus(String status) {
         LOGGER.info("Wait until Kafka Mirror Maker cluster is in desired state: {}", status);
         TestUtils.waitFor("Kafka Mirror Maker status is not in desired state: " + status, Constants.GLOBAL_POLL_INTERVAL, Constants.GLOBAL_STATUS_TIMEOUT, () -> {
-            Condition kafkaCondition = testClassResources().kafkaMirrorMaker().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus().getConditions().get(0);
+            Condition kafkaCondition = strimziKubernetesClient().kafkaMirrorMaker().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus().getConditions().get(0);
             logCurrentStatus(kafkaCondition, KafkaMirrorMaker.RESOURCE_KIND);
             return kafkaCondition.getType().equals(status);
         });
@@ -294,7 +294,7 @@ class CustomResourceStatusST extends AbstractST {
     void waitForKafkaBridgeStatus(String status) {
         LOGGER.info("Wait until Kafka Bridge cluster is in desired state: {}", status);
         TestUtils.waitFor("Kafka Bridge status is not in desired state: " + status, Constants.GLOBAL_POLL_INTERVAL, Constants.GLOBAL_STATUS_TIMEOUT, () -> {
-            Condition kafkaCondition = testClassResources().kafkaBridge().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus().getConditions().get(0);
+            Condition kafkaCondition = strimziKubernetesClient().kafkaBridge().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus().getConditions().get(0);
             logCurrentStatus(kafkaCondition, KafkaBridge.RESOURCE_KIND);
             return kafkaCondition.getType().equals(status);
         });
@@ -304,7 +304,7 @@ class CustomResourceStatusST extends AbstractST {
     void waitForKafkaConnectStatus(String status) {
         LOGGER.info("Wait until Kafka Connect cluster is in desired state: {}", status);
         TestUtils.waitFor("Kafka Connect status is not in desired state: " + status, Constants.GLOBAL_POLL_INTERVAL, Constants.CONNECT_STATUS_TIMEOUT, () -> {
-            Condition kafkaCondition = testClassResources().kafkaConnect().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus().getConditions().get(0);
+            Condition kafkaCondition = strimziKubernetesClient().kafkaConnect().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus().getConditions().get(0);
             logCurrentStatus(kafkaCondition, KafkaConnect.RESOURCE_KIND);
             return kafkaCondition.getType().equals(status);
         });
@@ -314,7 +314,7 @@ class CustomResourceStatusST extends AbstractST {
     void waitForKafkaConnectS2IStatus(String status) {
         LOGGER.info("Wait until Kafka ConnectS2I cluster is in desired state: {}", status);
         TestUtils.waitFor("Kafka ConnectS2I status is not in desired state: " + status, Constants.GLOBAL_POLL_INTERVAL, Constants.CONNECT_STATUS_TIMEOUT, () -> {
-            Condition kafkaCondition = testClassResources().kafkaConnectS2I().inNamespace(NAMESPACE).withName(CONNECTS2I_CLUSTER_NAME).get().getStatus().getConditions().get(0);
+            Condition kafkaCondition = strimziOpenShiftClient().kafkaConnectS2i().inNamespace(NAMESPACE).withName(CONNECTS2I_CLUSTER_NAME).get().getStatus().getConditions().get(0);
             logCurrentStatus(kafkaCondition, KafkaConnectS2I.RESOURCE_KIND);
             return kafkaCondition.getType().equals(status);
         });
@@ -332,7 +332,7 @@ class CustomResourceStatusST extends AbstractST {
     }
 
     void assertKafkaStatus(long expectedObservedGeneration, String internalAddress) {
-        KafkaStatus kafkaStatus = testClassResources().kafka().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus();
+        KafkaStatus kafkaStatus = strimziKubernetesClient().kafka().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus();
         assertThat("Kafka cluster status has incorrect Observed Generation", kafkaStatus.getObservedGeneration(), is(expectedObservedGeneration));
 
         for (ListenerStatus listener : kafkaStatus.getListeners()) {
@@ -358,24 +358,24 @@ class CustomResourceStatusST extends AbstractST {
     }
 
     void assertKafkaMirrorMakerStatus(long expectedObservedGeneration) {
-        KafkaMirrorMakerStatus kafkaMirrorMakerStatus = testMethodResources().kafkaMirrorMaker().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus();
+        KafkaMirrorMakerStatus kafkaMirrorMakerStatus = strimziKubernetesClient().kafkaMirrorMaker().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus();
         assertThat("Kafka MirrorMaker cluster status has incorrect Observed Generation", kafkaMirrorMakerStatus.getObservedGeneration(), is(expectedObservedGeneration));
     }
 
     void assertKafkaBridgeStatus(long expectedObservedGeneration, String bridgeAddress) {
-        KafkaBridgeStatus kafkaBridgeStatus = testClassResources().kafkaBridge().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus();
+        KafkaBridgeStatus kafkaBridgeStatus = strimziKubernetesClient().kafkaBridge().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus();
         assertThat("Kafka Bridge cluster status has incorrect Observed Generation", kafkaBridgeStatus.getObservedGeneration(), is(expectedObservedGeneration));
         assertThat("Kafka Bridge cluster status has incorrect URL", kafkaBridgeStatus.getUrl(), is(bridgeAddress));
     }
 
     void assertKafkaConnectStatus(long expectedObservedGeneration, String expectedUrl) {
-        KafkaConnectStatus kafkaConnectStatus = testMethodResources().kafkaConnect().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus();
+        KafkaConnectStatus kafkaConnectStatus = strimziKubernetesClient().kafkaConnect().inNamespace(NAMESPACE).withName(CLUSTER_NAME).get().getStatus();
         assertThat("Kafka Connect cluster status has incorrect Observed Generation", kafkaConnectStatus.getObservedGeneration(), is(expectedObservedGeneration));
         assertThat("Kafka Connect cluster status has incorrect URL", kafkaConnectStatus.getUrl(), is(expectedUrl));
     }
 
     void assertKafkaConnectS2IStatus(long expectedObservedGeneration, String expectedUrl, String expectedConfigName) {
-        KafkaConnectS2Istatus kafkaConnectS2IStatus = testMethodResources().kafkaConnectS2I().inNamespace(NAMESPACE).withName(CONNECTS2I_CLUSTER_NAME).get().getStatus();
+        KafkaConnectS2Istatus kafkaConnectS2IStatus = strimziOpenShiftClient().kafkaConnectS2i().inNamespace(NAMESPACE).withName(CONNECTS2I_CLUSTER_NAME).get().getStatus();
         assertThat("Kafka ConnectS2I cluster status has incorrect Observed Generation", kafkaConnectS2IStatus.getObservedGeneration(), is(expectedObservedGeneration));
         assertThat("Kafka ConnectS2I cluster status has incorrect URL", kafkaConnectS2IStatus.getUrl(), is(expectedUrl));
         assertThat("Kafka ConnectS2I cluster status has incorrect BuildConfigName", kafkaConnectS2IStatus.getBuildConfigName(), is(expectedConfigName));
