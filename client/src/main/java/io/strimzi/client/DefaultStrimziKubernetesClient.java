@@ -32,5 +32,4 @@ public class DefaultStrimziKubernetesClient
     public StrimziKubernetesAPIGroupDSL strimzi() {
         return adapt(StrimziAPIGroupClient.class);
     }
-
 }

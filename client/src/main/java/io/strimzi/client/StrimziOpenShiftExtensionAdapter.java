@@ -12,7 +12,6 @@ import okhttp3.OkHttpClient;
 
 public class StrimziOpenShiftExtensionAdapter implements ExtensionAdapter<StrimziOpenShiftClient> {
 
-
     @Override
     public Class<StrimziOpenShiftClient> getExtensionType() {
         return StrimziOpenShiftClient.class;
@@ -23,7 +22,6 @@ public class StrimziOpenShiftExtensionAdapter implements ExtensionAdapter<Strimz
         // TODO check that the Strimzi S2I CRDs are installed
         return new OpenshiftAdapterSupport().isAdaptable(client);
     }
-
 
     @Override
     public StrimziOpenShiftClient adapt(Client client) {

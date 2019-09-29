@@ -128,7 +128,7 @@ public class Resources {
                     LOGGER.info("Deleting {} {} in namespace {}",
                             resource.getKind(), resource.getMetadata().getName(), resource.getMetadata().getNamespace());
                     x.inNamespace(resource.getMetadata().getNamespace())
-                            .withName(resource.getMetadata().getName())
+                            .withName(resource.getMetadata().getName()).cascading(true)
                             .delete();
                     waitForDeletion((Kafka) resource);
                 });
@@ -138,7 +138,7 @@ public class Resources {
                     LOGGER.info("Deleting {} {} in namespace {}",
                             resource.getKind(), resource.getMetadata().getName(), resource.getMetadata().getNamespace());
                     x.inNamespace(resource.getMetadata().getNamespace())
-                            .withName(resource.getMetadata().getName())
+                            .withName(resource.getMetadata().getName()).cascading(true)
                             .delete();
                     waitForDeletion((KafkaConnect) resource);
                 });
@@ -148,7 +148,7 @@ public class Resources {
                     LOGGER.info("Deleting {} {} in namespace {}",
                             resource.getKind(), resource.getMetadata().getName(), resource.getMetadata().getNamespace());
                     x.inNamespace(resource.getMetadata().getNamespace())
-                            .withName(resource.getMetadata().getName())
+                            .withName(resource.getMetadata().getName()).cascading(true)
                             .delete();
                     waitForDeletion((KafkaConnectS2I) resource);
                 });
@@ -158,7 +158,7 @@ public class Resources {
                     LOGGER.info("Deleting {} {} in namespace {}",
                             resource.getKind(), resource.getMetadata().getName(), resource.getMetadata().getNamespace());
                     x.inNamespace(resource.getMetadata().getNamespace())
-                            .withName(resource.getMetadata().getName())
+                            .withName(resource.getMetadata().getName()).cascading(true)
                             .delete();
                     waitForDeletion((KafkaMirrorMaker) resource);
                 });
@@ -168,7 +168,7 @@ public class Resources {
                     LOGGER.info("Deleting {} {} in namespace {}",
                             resource.getKind(), resource.getMetadata().getName(), resource.getMetadata().getNamespace());
                     x.inNamespace(resource.getMetadata().getNamespace())
-                            .withName(resource.getMetadata().getName())
+                            .withName(resource.getMetadata().getName()).cascading(true)
                             .delete();
                     waitForDeletion((KafkaBridge) resource);
                 });
@@ -382,7 +382,6 @@ public class Resources {
     }
 
     DoneableKafka kafka(Kafka kafka) {
-        LOGGER.info("cajk");
         return new DoneableKafka(kafka, k -> {
             TestUtils.waitFor("Kafka creation", Constants.POLL_INTERVAL_FOR_RESOURCE_CREATION, Constants.TIMEOUT_FOR_CR_CREATION,
                 () -> {

@@ -11,7 +11,6 @@ import okhttp3.OkHttpClient;
 
 public class StrimziKubernetesExtensionAdapter implements ExtensionAdapter<StrimziKubernetesClient> {
 
-
     @Override
     public Class<StrimziKubernetesClient> getExtensionType() {
         return StrimziKubernetesClient.class;
@@ -22,7 +21,6 @@ public class StrimziKubernetesExtensionAdapter implements ExtensionAdapter<Strim
         // TODO check that the Strimzi CRDs are installed
         return true;
     }
-
 
     @Override
     public StrimziKubernetesClient adapt(Client client) {

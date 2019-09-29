@@ -324,7 +324,7 @@ class CustomResourceStatusST extends AbstractST {
     void waitForKafkaTopic(String status, String topicName) {
         LOGGER.info("Wait until Kafka Topic {} is in desired state: {}", topicName, status);
         TestUtils.waitFor("Kafka Topic " + topicName + " status is not in desired state: " + status, Constants.GLOBAL_POLL_INTERVAL, Constants.CONNECT_STATUS_TIMEOUT, () -> {
-            Condition kafkaCondition = testClassResources().kafkaTopic().inNamespace(NAMESPACE).withName(topicName).get().getStatus().getConditions().get(0);
+            Condition kafkaCondition = strimziKubernetesClient().kafkaTopic().inNamespace(NAMESPACE).withName(topicName).get().getStatus().getConditions().get(0);
             logCurrentStatus(kafkaCondition, KafkaTopic.RESOURCE_KIND);
             return kafkaCondition.getType().equals(status);
         });
@@ -382,7 +382,7 @@ class CustomResourceStatusST extends AbstractST {
     }
 
     void assertKafkaTopicStatus(long expectedObservedGeneration, String topicName) {
-        KafkaTopicStatus kafkaTopicStatus = testMethodResources().kafkaTopic().inNamespace(NAMESPACE).withName(topicName).get().getStatus();
+        KafkaTopicStatus kafkaTopicStatus = strimziKubernetesClient().kafkaTopic().inNamespace(NAMESPACE).withName(topicName).get().getStatus();
         assertThat("Kafka Topic status has incorrect Observed Generation", kafkaTopicStatus.getObservedGeneration(), is(expectedObservedGeneration));
     }
 }
