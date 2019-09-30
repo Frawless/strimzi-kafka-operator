@@ -34,7 +34,7 @@ public abstract class StrimziReadyOperationsImpl<
         implements Resource<T, D> {
 
     public StrimziReadyOperationsImpl(OperationContext ctx) {
-        super(ctx);
+        super(ctx.withCascading(true));
     }
 
     protected abstract boolean isReady(T resource);
