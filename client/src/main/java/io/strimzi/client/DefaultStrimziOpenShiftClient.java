@@ -30,8 +30,8 @@ public class DefaultStrimziOpenShiftClient
     }
 
     @Override
-    public StrimziOpenShiftAPIGroupDSL strimzi() {
-        return adapt(StrimziOpenShiftAPIGroupDSL.class);
+    public StrimziAPIGroupClient strimzi() {
+        return adapt(StrimziAPIGroupClient.class);
     }
 
 }

@@ -29,7 +29,7 @@ public class DefaultStrimziKubernetesClient
     }
 
     @Override
-    public StrimziKubernetesAPIGroupDSL strimzi() {
+    public StrimziAPIGroupClient strimzi() {
         return adapt(StrimziAPIGroupClient.class);
     }
 }
