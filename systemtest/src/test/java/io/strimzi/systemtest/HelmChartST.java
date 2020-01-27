@@ -5,6 +5,7 @@
 package io.strimzi.systemtest;
 
 import io.strimzi.api.kafka.model.KafkaResources;
+import io.strimzi.systemtest.resources.KubernetesResource;
 import io.strimzi.systemtest.utils.kubeUtils.controllers.StatefulSetUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,6 +27,7 @@ class HelmChartST extends BaseST {
     static final String NAMESPACE = "helm-chart-cluster-test";
     private static final String CLUSTER_NAME = "my-cluster";
     private static final String TOPIC_NAME = "test-topic";
+    private final String helmReleaseName = "strimzi-systemtests";
 
     @Test
     void testDeployKafkaClusterViaHelmChart() {
@@ -35,22 +37,33 @@ class HelmChartST extends BaseST {
         StatefulSetUtils.waitForAllStatefulSetPodsReady(KafkaResources.kafkaStatefulSetName(CLUSTER_NAME), 3);
     }
 
+    @Test
+    void testDeployKafkaToDifferentNamespace() {
+        String kafkaNamespace = "kafka-namespace";
+        cluster.createNamespace(kafkaNamespace);
+
+        KafkaResource.kafkaEphemeral(CLUSTER_NAME, 3).done();
+        KafkaTopicResource.topic(CLUSTER_NAME, TOPIC_NAME).done();
+
+        cluster.setNamespace(NAMESPACE);
+    }
+
     @BeforeAll
     void setup() {
         LOGGER.info("Creating resources before the test class");
         cluster.createNamespace(NAMESPACE);
-        deployClusterOperatorViaHelmChart();
+        KubernetesResource.deployClusterOperatorViaHelmChart(helmReleaseName, "*");
     }
 
     @Override
     protected void tearDownEnvironmentAfterAll() {
-        deleteClusterOperatorViaHelmChart();
+        KubernetesResource.deleteClusterOperatorViaHelmChart(helmReleaseName);
         cluster.deleteNamespaces();
     }
 
     @Override
     protected void recreateTestEnv(String coNamespace, List<String> bindingsNamespaces) {
-        deleteClusterOperatorViaHelmChart();
+        KubernetesResource.deleteClusterOperatorViaHelmChart(helmReleaseName);
         cluster.deleteNamespaces();
         cluster.createNamespace(NAMESPACE);
     }

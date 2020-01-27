@@ -5,7 +5,6 @@
 package io.strimzi.test.k8s;
 
 import io.strimzi.test.executor.Exec;
-import io.strimzi.test.k8s.cmdClient.KubeCmdClient;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -22,7 +21,7 @@ public class HelmClient {
     private static final Logger LOGGER = LogManager.getLogger(HelmClient.class);
 
     private static final String HELM_CMD = "helm";
-    private static final String INSTALL_TIMEOUT_SECONDS = "60";
+    private static final String INSTALL_TIMEOUT_SECONDS = "120";
 
     private boolean initialized;
     private String namespace;
@@ -87,8 +86,8 @@ public class HelmClient {
         return args;
     }
 
-    static HelmClient findClient(KubeCmdClient<?> kubeClient) {
-        HelmClient client = new HelmClient(kubeClient.namespace());
+    static HelmClient findClient() {
+        HelmClient client = new HelmClient(KubeClusterResource.getInstance().getNamespace());
         if (!client.clientAvailable()) {
             throw new RuntimeException("No helm client found on $PATH. $PATH=" + System.getenv("PATH"));
         }

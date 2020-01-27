@@ -22,7 +22,6 @@ import io.strimzi.systemtest.resources.ResourceManager;
 import io.strimzi.systemtest.utils.StUtils;
 import io.strimzi.systemtest.utils.kubeUtils.objects.PodUtils;
 import io.strimzi.test.TestUtils;
-import io.strimzi.test.k8s.HelmClient;
 import io.strimzi.test.k8s.KubeClusterResource;
 import io.strimzi.test.timemeasuring.TimeMeasuringSystem;
 import org.apache.logging.log4j.LogManager;
@@ -36,9 +35,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import java.io.File;
-import java.io.InputStream;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,10 +44,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static io.strimzi.systemtest.matchers.Matchers.logHasNoUnexpectedErrors;
-import static io.strimzi.test.TestUtils.entry;
 import static io.strimzi.test.k8s.KubeClusterResource.cmdKubeClient;
 import static io.strimzi.test.k8s.KubeClusterResource.kubeClient;
 import static java.util.Arrays.asList;
@@ -92,21 +86,11 @@ public abstract class BaseST implements TestSeparator {
     private static final String CLUSTER_OPERATOR_PREFIX = "strimzi";
 
     public static final String TOPIC_CM = "../examples/topic/kafka-topic.yaml";
-    public static final String HELM_CHART = "../helm-charts/strimzi-kafka-operator/";
-    public static final String HELM_RELEASE_NAME = "strimzi-systemtests";
-    public static final String REQUESTS_MEMORY = "512Mi";
-    public static final String REQUESTS_CPU = "200m";
-    public static final String LIMITS_MEMORY = "512Mi";
-    public static final String LIMITS_CPU = "1000m";
 
     protected String testClass;
     protected String testName;
 
     protected Random rng = new Random();
-
-    private HelmClient helmClient() {
-        return cluster.helmClient().namespace(cluster.getNamespace());
-    }
 
     /**
      * Prepare environment for cluster operator which includes creation of namespaces, custom resources and operator
@@ -279,75 +263,6 @@ public abstract class BaseST implements TestSeparator {
         }
         return images;
     }
-
-    /**
-     * Wait till all pods in specific namespace being deleted and recreate testing environment in case of some pods cannot be deleted.
-     * This method is {@Deprecated} and it should be removed in the future. Instead of use this method, you should use method {@link io.strimzi.systemtest.utils.kubeUtils.objects.PodUtils#waitForPodDeletion(String)}
-     * which should be used by default in deletion process for all components (it force pod deletion via executor instead of fabric8 client, which seems to be unstable).
-     * @param time timeout in miliseconds
-     * @throws Exception exception
-     */
-    @Deprecated
-    void waitForDeletion(long time) throws Exception {
-        List<Pod> pods = kubeClient().listPods().stream().filter(
-            p -> !p.getMetadata().getName().startsWith(CLUSTER_OPERATOR_PREFIX)).collect(Collectors.toList());
-        // Delete pods in case of kubernetes keep them up
-        pods.forEach(p -> kubeClient().deletePod(p));
-
-        LOGGER.info("Wait for {} ms after cleanup to make sure everything is deleted", time);
-        Thread.sleep(time);
-
-        // Collect pods again after proper removal
-        pods = kubeClient().listPods().stream().filter(
-            p -> !p.getMetadata().getName().startsWith(CLUSTER_OPERATOR_PREFIX)).collect(Collectors.toList());
-        long podCount = pods.size();
-
-        StringBuilder nonTerminated = new StringBuilder();
-        if (podCount > 0) {
-            pods.forEach(
-                p -> nonTerminated.append("\n").append(p.getMetadata().getName()).append(" - ").append(p.getStatus().getPhase())
-            );
-            throw new Exception("There are some unexpected pods! Cleanup is not finished properly!" + nonTerminated);
-        }
-    }
-
-    /**
-     * Deploy CO via helm chart. Using config file stored in test resources.
-     */
-    public void deployClusterOperatorViaHelmChart() {
-        String dockerOrg = Environment.STRIMZI_ORG;
-        String dockerTag = Environment.STRIMZI_TAG;
-
-        Map<String, String> values = Collections.unmodifiableMap(Stream.of(
-            entry("imageRepositoryOverride", dockerOrg),
-            entry("imageTagOverride", dockerTag),
-            entry("image.pullPolicy", Constants.IMAGE_PULL_POLICY),
-            entry("resources.requests.memory", REQUESTS_MEMORY),
-            entry("resources.requests.cpu", REQUESTS_CPU),
-            entry("resources.limits.memory", LIMITS_MEMORY),
-            entry("resources.limits.cpu", LIMITS_CPU),
-            entry("logLevel", Environment.STRIMZI_LOG_LEVEL))
-            .collect(TestUtils.entriesToMap()));
-
-        LOGGER.info("Creating cluster operator with Helm Chart before test class {}", testClass);
-        Path pathToChart = new File(HELM_CHART).toPath();
-        String oldNamespace = cluster.setNamespace("kube-system");
-        InputStream helmAccountAsStream = getClass().getClassLoader().getResourceAsStream("helm/helm-service-account.yaml");
-        String helmServiceAccount = TestUtils.readResource(helmAccountAsStream);
-        cmdKubeClient().applyContent(helmServiceAccount);
-        helmClient().init();
-        cluster.setNamespace(oldNamespace);
-        helmClient().install(pathToChart, HELM_RELEASE_NAME, values);
-    }
-
-    /**
-     * Delete CO deployed via helm chart.
-     */
-    public void deleteClusterOperatorViaHelmChart() {
-        LOGGER.info("Deleting cluster operator with Helm Chart after test class {}", testClass);
-        helmClient().delete(HELM_RELEASE_NAME);
-    }
-
 
     /**
      * Verifies container configuration for specific component (kafka/zookeeper/bridge/mm) by environment key.

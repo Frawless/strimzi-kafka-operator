@@ -174,6 +174,23 @@ public class KubeClusterResource {
     }
 
     /**
+     * Provides appropriate Helm client
+     * @return Helm client
+     */
+    public static HelmClient helmClient() {
+        return cluster.defaultHelmClient();
+    }
+
+    /**
+     * Provides appropriate Helm client in specific namespace
+     * @param inNamespace Namespace will be used as a current namespace for client
+     * @return Helm client with expected namespace in configuration
+     */
+    public static HelmClient helmClient(String inNamespace) {
+        return cluster.defaultHelmClient().namespace(inNamespace);
+    }
+
+    /**
      * Delete ServiceAccount, Roles and CRDs from kubernetes cluster.
      */
     public void deleteClusterOperatorInstallFiles() {
@@ -275,28 +292,23 @@ public class KubeClusterResource {
         }
     }
 
-    /** Gets the namespace in use */
-    public String defaultNamespace() {
-        return cmdClient().defaultNamespace();
-    }
-
-    public KubeCmdClient cmdClient() {
+    private KubeCmdClient cmdClient() {
         if (cmdClient == null) {
             cmdClient = cluster().defaultCmdClient();
         }
         return cmdClient;
     }
 
-    public KubeClient client() {
+    private KubeClient client() {
         if (client == null) {
             this.client = cluster().defaultClient();
         }
         return client;
     }
 
-    public HelmClient helmClient() {
+    private HelmClient defaultHelmClient() {
         if (helmClient == null) {
-            this.helmClient = HelmClient.findClient(cmdClient());
+            this.helmClient = HelmClient.findClient();
         }
         return helmClient;
     }

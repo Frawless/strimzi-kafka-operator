@@ -24,19 +24,26 @@ import io.strimzi.systemtest.Environment;
 import io.strimzi.systemtest.utils.StUtils;
 import io.strimzi.systemtest.utils.kubeUtils.controllers.DeploymentUtils;
 import io.strimzi.test.TestUtils;
+import io.strimzi.test.k8s.KubeClusterResource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static io.strimzi.test.k8s.KubeClusterResource.cmdKubeClient;
+
 public class KubernetesResource {
     private static final Logger LOGGER = LogManager.getLogger(KubernetesResource.class);
 
     public static final String PATH_TO_CO_CONFIG = "../install/cluster-operator/050-Deployment-strimzi-cluster-operator.yaml";
+    public static final String PATH_HELM_CHART = "../helm-charts/strimzi-kafka-operator/";
 
     public static DoneableDeployment clusterOperator(String namespace, long operationTimeout) {
         return deployNewDeployment(defaultCLusterOperator(namespace, operationTimeout, Constants.RECONCILIATION_INTERVAL).build());
@@ -318,5 +325,47 @@ public class KubernetesResource {
 
     private static Service deleteLater(Service resource) {
         return ResourceManager.deleteLater(ResourceManager.kubeClient().getClient().services(), resource);
+    }
+
+    // Deploy CO via HELM
+    public static void deployClusterOperatorViaHelmChartForAllNamespaces(String helmReleaseName) {
+        deployClusterOperatorViaHelmChart(helmReleaseName, "*");
+    }
+    /**
+     * Deploy CO via helm chart. Using config file stored in test resources.
+     */
+    public static void deployClusterOperatorViaHelmChart(String helmReleaseName, String namespaces) {
+        Map<String, String> values = new HashMap<>();
+        values.put("imageRepositoryOverride", Environment.STRIMZI_ORG);
+        values.put("imageTagOverride", Environment.STRIMZI_TAG);
+        if (namespaces.contains("*")) {
+            values.put("watchAnyNamespace", "*");
+        } else if (!namespaces.isEmpty()) {
+            values.put("watchNamespaces", namespaces);
+        }
+        values.put("image.pullPolicy", Constants.IMAGE_PULL_POLICY);
+        values.put("resources.requests.memory", "512Mi");
+        values.put("resources.requests.cpu", "200m");
+        values.put("resources.limits.memory", "512Mi");
+        values.put("resources.limits.cpu", "1000m");
+        values.put("logLevel", Environment.STRIMZI_LOG_LEVEL);
+
+        Path pathToChart = new File(PATH_HELM_CHART).toPath();
+        String oldNamespace = KubeClusterResource.getInstance().setNamespace("kube-system");
+        InputStream helmAccountAsStream = KubernetesResource.class.getClassLoader().getResourceAsStream("helm/helm-service-account.yaml");
+        String helmServiceAccount = TestUtils.readResource(helmAccountAsStream);
+        cmdKubeClient().applyContent(helmServiceAccount);
+        KubeClusterResource.helmClient().init();
+        KubeClusterResource.getInstance().setNamespace(oldNamespace);
+        LOGGER.info("Deploying Cluster Operator via Helm...");
+        KubeClusterResource.helmClient().install(pathToChart, helmReleaseName, values);
+        LOGGER.info("Cluster Operator is ready");
+    }
+
+    /**
+     * Delete CO deployed via helm chart.
+     */
+    public static void deleteClusterOperatorViaHelmChart(String helmReleaseName) {
+        KubeClusterResource.helmClient().delete(helmReleaseName);
     }
 }
