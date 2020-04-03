@@ -344,7 +344,6 @@ class SecurityST extends BaseST {
     @Test
     @Tag(ACCEPTANCE)
     @Tag(INTERNAL_CLIENTS_USED)
-    @Tag(AZURE)
     void testAutoRenewAllCaCertsTriggeredByAnno() {
         autoRenewSomeCaCertsTriggeredByAnno(asList(
                 clusterCaCertificateSecretName(CLUSTER_NAME),
@@ -640,6 +639,7 @@ class SecurityST extends BaseST {
 
     @Test
     @Tag(INTERNAL_CLIENTS_USED)
+    @Tag(AZURE)
     void testCertRegeneratedAfterInternalCAisDeleted() {
         KafkaResource.kafkaPersistent(CLUSTER_NAME, 3, 1).done();
 
