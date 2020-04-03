@@ -135,8 +135,6 @@ class ConnectST extends BaseST {
             .endSpec().done();
         KafkaTopicResource.topic(CLUSTER_NAME, CONNECT_TOPIC_NAME).done();
 
-        assertThat(true, is(false));
-
         String kafkaConnectPodName = kubeClient().listPods("type", "kafka-connect").get(0).getMetadata().getName();
 
         KafkaConnectUtils.waitUntilKafkaConnectRestApiIsAvailable(kafkaConnectPodName);
