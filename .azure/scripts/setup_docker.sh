@@ -5,5 +5,5 @@ sudo apt-get remove --purge iotedge
 sudo apt-get remove --purge moby-cli
 sudo apt-get remove --purge moby-engine
 
-wget -O docker.deb https://download.docker.com/linux/ubuntu/dists/bionic/pool/stable/amd64/docker-ce_18.09.9~3-0~ubuntu-bionic_amd64.deb
+wget -O docker.deb https://download.docker.com/linux/ubuntu/dists/bionic/pool/stable/amd64/docker-ce_18.06.3~ce~3-0~ubuntu_amd64.deb
 sudo dpkg -i ./docker.deb
