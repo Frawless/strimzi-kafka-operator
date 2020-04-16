@@ -168,6 +168,9 @@ function build {
     do
         lib_directory=${version_libs[$kafka_version]}
 
+        echo "###DEBUG###"
+        docker images
+
         if [[ $targets == *"docker_build"* ]]
         then
             relative_dist_dir=${version_dist_dirs[$kafka_version]}
