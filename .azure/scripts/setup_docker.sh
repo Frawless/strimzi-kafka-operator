@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
+set -e
+
 # Remove moby-engine which use docker 3.0.8 on azure
 sudo apt-get remove --purge iotedge
 sudo apt-get remove --purge moby-cli
 sudo apt-get remove --purge moby-engine
 
-set -e
-
+# Do update and install docker
 sudo apt update
 sudo apt install docker.io
 sudo systemctl unmask docker
@@ -19,7 +20,3 @@ sudo systemctl daemon-reload
 sudo rsync -aqxP /var/lib/docker/ /mnt/docker
 
 sudo systemctl start docker
-
-
-#wget -O docker.deb https://download.docker.com/linux/ubuntu/dists/bionic/pool/stable/amd64/docker-ce_18.06.3~ce~3-0~ubuntu_amd64.deb
-#sudo dpkg -i ./docker.deb
