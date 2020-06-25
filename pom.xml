@@ -835,7 +835,6 @@
                                 <include>**/*ST.java</include>
                             </includes>
                             <trimStackTrace>false</trimStackTrace>
-                            <forkCount>1</forkCount>
                         </configuration>
                     </execution>
                 </executions>
