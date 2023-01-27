@@ -1,0 +1,12 @@
+---
+defaultChannel: stable
+name: strimzi-kafka-operator
+schema: olm.package
+---
+schema: olm.channel
+package: strimzi-kafka-operator
+name: stable
+entries:
+  - name: strimzi-cluster-operator.vNEW_VERSION
+    replaces: strimzi-cluster-operator.vOLD_VERSION
+  - name: strimzi-cluster-operator.vOLD_VERSION
