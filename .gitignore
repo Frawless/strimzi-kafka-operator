@@ -35,6 +35,7 @@ helm-charts/helm3/strimzi-kafka-operator-*.*.*.tgz
 packaging/helm-charts/helm3/strimzi-kafka-operator-*.*.*.tgz
 
 tools/olm-bundle/bundle
+tools/olm-bundle/catalog
 
 docker-images/artifacts/binaries
 docker-images/container-archives
