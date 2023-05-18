@@ -1,0 +1,24 @@
+test:
+  ./test.sh
+duration: 120m
+environment:
+  DOCKER_ORG: "strimzi"
+  DOCKER_TAG: "test"
+  TEST_LOG_DIR: "systemtest/target/logs"
+
+/acceptance:
+  summary: Run acceptance strimzi test suite
+  component: [strimzi, kafka]
+  tier: 1
+  environment+:
+    TEST_PROFILE: all
+    TEST_GROUPS: smoke
+
+
+/regression:
+  summary: Run regression strimzi test suite
+  component: [strimzi, kafka]
+  tier: 2
+  environment+:
+    TEST_PROFILE: regression
+    TEST_GROUPS: smoke

@@ -1,0 +1,126 @@
+# TMT test plan definition
+# https://tmt.readthedocs.io/en/latest/overview.html
+
+# Baseline common for all test plans
+#######################################################################
+summary: Strimzi test suite
+discover:
+  how: fmf
+
+# Required HW
+provision:
+  hardware:
+    memory: ">= 16 GiB"
+    cpu:
+      processors: ">= 4"
+
+# Install required packages and scripts for running strimzi suite
+prepare:
+  - name: install packages
+    how: install
+    package:
+      - wget
+      - docker
+      - docker-buildx
+      - java-17-openjdk-devel
+      - xz
+      - make
+      - git
+      - zip
+      - coreutils
+
+  - name: deploy yq
+    how: shell
+    script: |
+      ARCH=$(uname -m)
+      if [[ $ARCH == "x86_64" ]]; then ARCH="amd64"; fi
+      if [[ $ARCH == "aarch64" ]]; then ARCH="arm64"; fi
+      ./.azure/scripts/install_yq.sh ${ARCH}
+
+  - name: deploy oc/kubectl
+    how: shell
+    script: |
+      PLATFORM=$(uname -m)
+      URL="http://mirror.openshift.com/pub/openshift-v4/${PLATFORM}/clients/ocp/stable/openshift-client-linux.tar.gz"
+      mkdir -p /tmp/openshift
+      wget ${URL} -O openshift.tar.gz -q
+      tar xzf openshift.tar.gz -C /tmp/openshift
+      sudo cp /tmp/openshift/oc /usr/bin/oc
+      sudo cp /tmp/openshift/kubectl /usr/bin/kubectl
+      sudo rm -rf /tmp/openshift/
+      sudo rm -rf openshift.tar.gz
+
+  - name: deploy mvn
+    how: shell
+    script: |
+      mkdir -p /usr/share/maven /usr/share/maven/ref
+      curl -fsSL -o /tmp/apache-maven.tar.gz https://apache.osuosl.org/maven/maven-3/3.8.8/binaries/apache-maven-3.8.8-bin.tar.gz
+      tar -xzf /tmp/apache-maven.tar.gz -C /usr/share/maven --strip-components=1
+      rm -f /tmp/apache-maven.tar.gz
+      ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
+
+  - name: deploy minikube
+    how: shell
+    script: |
+      export TEST_CLUSTER='minikube'
+      ARCH=$(uname -m)
+      if [[ $ARCH == "x86_64" ]]; then ARCH="amd64"; fi
+      if [[ $ARCH == "aarch64" ]]; then ARCH="arm64"; fi
+      sudo systemctl enable docker
+      sudo systemctl start docker
+      ./.azure/scripts/setup-kubernetes.sh ${ARCH}
+
+  - name: deploy helm
+    how: shell
+    script: |
+      ./.azure/scripts/setup-helm.sh
+
+  - name: setup upgrade
+    how: shell
+    script: |
+      ./.azure/scripts/setup_upgrade.sh
+
+  - name: install shellcheck
+    how: shell
+    script: |
+      ./.azure/scripts/setup_shellcheck.sh
+
+  - name: Build strimzi images
+    how: shell
+    script: |
+      #build images
+      eval $(minikube docker-env)
+      ARCH=$(uname -m)
+      if [[ ${ARCH} == "aarch64" ]]; then
+        export DOCKER_ARCHITECTURE="arm64"
+        export DOCKER_BUILDX=buildx
+      fi
+      export MVN_ARGS="-B -DskipTests -Dmaven.javadoc.skip=true --no-transfer-progress"
+      export DOCKER_REGISTRY="localhost:5000"
+      export DOCKER_ORG="strimzi"
+      export DOCKER_TAG="test"
+      make java_install
+      make docker_build
+      make docker_tag
+      make docker_push
+
+# Discover tmt defined tests in tests/ folder
+execute:
+  how: tmt
+
+# Post install step to copy logs
+finish:
+  how: shell
+  script: ./systemtest/tmt/scripts/copy-logs.sh
+#######################################################################
+
+/acceptance:
+  summary: Acceptance strimzi test suite
+  discover+:
+    filter: "tier:1"
+
+
+/regression:
+  summary: Regression strimzi test suite
+  discover+:
+    filter: "tier:2"
