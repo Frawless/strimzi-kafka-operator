@@ -18,6 +18,7 @@ provision:
 prepare:
   - name: Enable docker repo
     how: shell
+    order: 70
     scripts: |
       sudo dnf install dnf-plugins-core -y
       sudo dnf config-manager --add-repo=https://download.docker.com/linux/fedora/docker-ce.repo
