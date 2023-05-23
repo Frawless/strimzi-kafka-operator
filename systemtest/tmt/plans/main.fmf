@@ -27,7 +27,7 @@ prepare:
       - zip
       - coreutils
 
-  - name: Enable docker repo
+  - name: Install docker-cd
     how: shell
     order: 70
     scripts: |
