@@ -16,6 +16,13 @@ provision:
 
 # Install required packages and scripts for running strimzi suite
 prepare:
+  - name: add docker-ce repo
+    how: shell
+    order: 70
+    script: |
+      sudo dnf install dnf-plugins-core -y
+      sudo dnf config-manager --add-repo=https://download.docker.com/linux/fedora/docker-ce.repo
+
   - name: install packages
     how: install
     package:
@@ -26,13 +33,11 @@ prepare:
       - git
       - zip
       - coreutils
-
-  - name: Install docker-ce
-    how: shell
-    scripts: |
-      sudo dnf install dnf-plugins-core -y
-      sudo dnf config-manager --add-repo=https://download.docker.com/linux/fedora/docker-ce.repo
-      sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
 
   - name: deploy yq
     how: shell
