@@ -20,8 +20,7 @@ prepare:
     how: install
     package:
       - wget
-      - docker
-      - docker-buildx
+      - docker-ce
       - java-17-openjdk-devel
       - xz
       - make
