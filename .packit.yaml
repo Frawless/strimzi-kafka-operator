@@ -1,0 +1,7 @@
+jobs:
+  - job: tests
+    trigger: pull_request
+    identifier: "acceptance"
+    targets:
+      - strimzi
+    skip_build: true
