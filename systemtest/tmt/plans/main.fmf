@@ -16,11 +16,20 @@ provision:
 
 # Install required packages and scripts for running strimzi suite
 prepare:
+  - name: Enable docker repo
+    how: shell
+    scripts: |
+      sudo dnf install dnf-plugins-core -y
+      sudo dnf config-manager --add-repo=https://download.docker.com/linux/fedora/docker-ce.repo
   - name: install packages
     how: install
     package:
       - wget
       - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
       - java-17-openjdk-devel
       - xz
       - make
