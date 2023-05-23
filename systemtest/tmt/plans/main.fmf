@@ -27,7 +27,7 @@ prepare:
       - zip
       - coreutils
 
-  - name: Install docker-cd
+  - name: Install docker-ce
     how: shell
     order: 70
     scripts: |
