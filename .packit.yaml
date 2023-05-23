@@ -5,3 +5,7 @@ jobs:
     targets:
       - strimzi
     skip_build: true
+
+notifications:
+  pull_request:
+    successful_build: true
