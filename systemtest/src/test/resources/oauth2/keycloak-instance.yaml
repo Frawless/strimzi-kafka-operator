@@ -15,8 +15,9 @@ spec:
     passwordSecret:
       name: keycloak-db-secret
       key: password
+    database: keycloak
   ingress:
-    enabled: false
+    enabled: true
   http:
     tlsSecret: example-tls-secret
     httpEnabled: true

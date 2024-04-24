@@ -52,6 +52,7 @@ import static io.strimzi.test.k8s.KubeClusterResource.kubeClient;
  * Reason why this test class is not part of regression:
  * These tests does not have to be run every time with PRs and so on, the nature of the tests is sufficient for recovery profile only.
  */
+
 @Tag(RECOVERY)
 class NamespaceDeletionRecoveryST extends AbstractST {
     private static final Logger LOGGER = LogManager.getLogger(NamespaceDeletionRecoveryST.class);

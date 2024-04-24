@@ -40,7 +40,8 @@ import static io.strimzi.test.k8s.KubeClusterResource.cmdKubeClient;
 import static io.strimzi.test.k8s.KubeClusterResource.kubeClient;
 
 public class SetupKeycloak {
-    private static final List<String> KEYCLOAK_REALMS_FILE_NAMES = List.of("internal_realm.json", "authorization_realm.json", "scope_audience_realm.json");
+//    private static final List<String> KEYCLOAK_REALMS_FILE_NAMES = List.of("internal_realm.json", "authorization_realm.json", "scope_audience_realm.json");
+    private static final List<String> KEYCLOAK_REALMS_FILE_NAMES = List.of("internal-realm.yaml", "authorization-realm.yaml", "scope-audience-realm.yaml");
     private static final String KEYCLOAK_INSTALL_FILES_BASE_PATH = TestUtils.USER_PATH + "/../systemtest/src/test/resources/oauth2";
     private static final String KEYCLOAK_INSTANCE_FILE_PATH = KEYCLOAK_INSTALL_FILES_BASE_PATH + "/keycloak-instance.yaml";
     private static final String POSTGRES_FILE_PATH = KEYCLOAK_INSTALL_FILES_BASE_PATH + "/postgres.yaml";
@@ -142,20 +143,23 @@ public class SetupKeycloak {
         LOGGER.info("Importing Keycloak realms to Keycloak");
         KEYCLOAK_REALMS_FILE_NAMES.forEach(realmFile -> {
             Path path = Path.of(KEYCLOAK_INSTALL_FILES_BASE_PATH + "/" + realmFile);
-            try {
-                LOGGER.info("Importing realm from file: {}", path);
-                String jsonRealm = new JsonObject(Files.readString(path, StandardCharsets.UTF_8)).encode();
-                String result = KeycloakUtils.importRealm(keycloakNamespace, "https://" + keycloakInstance.getHttpsUri(), token, jsonRealm);
+//            try {
+//                LOGGER.info("Importing realm from file: {}", path);
+//                String jsonRealm = new JsonObject(Files.readString(path, StandardCharsets.UTF_8)).encode();
+//                String result = KeycloakUtils.importRealm(keycloakNamespace, "https://" + keycloakInstance.getHttpsUri(), token, jsonRealm);
+//
+//                // if KeycloakRealm is successfully imported, the return contains just empty String
+//                if (!result.isEmpty()) {
+//                    throw new RuntimeException(String.format("Realm from file path: %s wasn't imported!", path));
+//                }
+//
+//                LOGGER.info("Realm successfully imported");
+//            } catch (IOException e) {
+//                throw new RuntimeException(String.format("Unable to load file with path: %s due to exception: %n", path) + e);
+//            }
 
-                // if KeycloakRealm is successfully imported, the return contains just empty String
-                if (!result.isEmpty()) {
-                    throw new RuntimeException(String.format("Realm from file path: %s wasn't imported!", path));
-                }
-
-                LOGGER.info("Realm successfully imported");
-            } catch (IOException e) {
-                throw new RuntimeException(String.format("Unable to load file with path: %s due to exception: %n", path) + e);
-            }
+            LOGGER.info("Importing realm from file: {}", path);
+            ResourceManager.cmdKubeClient().namespace(keycloakNamespace).apply(path.toFile());
         });
     }
 
