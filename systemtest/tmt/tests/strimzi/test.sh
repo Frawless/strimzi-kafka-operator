@@ -27,13 +27,14 @@ echo "Using container org '$DOCKER_ORG'"
 echo "Using container tag '$DOCKER_TAG'"
 echo "Using CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN=$CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN"
 
-#mvn compile -pl config-model-generator -DskipTests -Dmaven.javadoc.skip=true --no-transfer-progress
-#mvn verify -pl systemtest -P ${TEST_PROFILE} \
-#    $([[ "${TEST_GROUPS}" != "" ]] && echo "-Dgroups=${TEST_GROUPS}" || echo "") \
-#    $([[ "${TESTS}" != "" ]] && echo "-Dit.test=${TESTS}" || echo "") \
-#    -DexcludedGroups="${EXCLUDED_TEST_GROUPS}" \
-#    -Dmaven.javadoc.skip=true \
-#    -Dfailsafe.rerunFailingTestsCount="${RERUN_FAILED_TEST_COUNT}" \
-#    -Djunit.jupiter.execution.parallel.enabled="${PARALLELISM_ENABLED}" \
-#    -Djunit.jupiter.execution.parallel.config.fixed.parallelism="${PARALLEL_TEST_COUNT}" \
-#    --no-transfer-progress
+mvn compile -pl config-model-generator -DskipTests -Dmaven.javadoc.skip=true --no-transfer-progress
+# Revert profile part!
+mvn verify -pl systemtest -P smoke \
+    $([[ "${TEST_GROUPS}" != "" ]] && echo "-Dgroups=${TEST_GROUPS}" || echo "") \
+    $([[ "${TESTS}" != "" ]] && echo "-Dit.test=${TESTS}" || echo "") \
+    -DexcludedGroups="${EXCLUDED_TEST_GROUPS}" \
+    -Dmaven.javadoc.skip=true \
+    -Dfailsafe.rerunFailingTestsCount="${RERUN_FAILED_TEST_COUNT}" \
+    -Djunit.jupiter.execution.parallel.enabled="${PARALLELISM_ENABLED}" \
+    -Djunit.jupiter.execution.parallel.config.fixed.parallelism="${PARALLEL_TEST_COUNT}" \
+    --no-transfer-progress
