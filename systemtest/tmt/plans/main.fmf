@@ -140,7 +140,7 @@ prepare:
       export CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN="${DOCKER_REGISTRY}/${DOCKER_ORG}/connect-file-sink:latest"
       # Build base image from previous data
       # Set quay and release tag in case the pipeline is triggered by release
-      if [[ ${RELEASE} == "true" ]]; then
+      if [[ ${RELEASE} == true ]]; then
         export BASE_IMAGE="quay.io/strimzi/kafka:$(cat release.version)-kafka-KAFKA_VERSION"
       else
         export BASE_IMAGE="${DOCKER_REGISTRY}/${DOCKER_ORG}/kafka:${DOCKER_TAG}-kafka-KAFKA_VERSION"

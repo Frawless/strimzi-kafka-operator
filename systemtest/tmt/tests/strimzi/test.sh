@@ -16,7 +16,7 @@ export DOCKER_REGISTRY="$DOCKER_REGISTRY:5001"
 export CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN="${DOCKER_REGISTRY}/${DOCKER_ORG}/connect-file-sink:latest"
 
 # Set quay and release tag in case the pipeline is triggered by release
-if [[ ${RELEASE} == "true" ]]; then
+if [[ ${RELEASE} == true ]]; then
 	export DOCKER_REGISTRY="quay.io"
 	export DOCKER_ORG="strimzi"
 	export DOCKER_TAG="$(cat release.version)"
