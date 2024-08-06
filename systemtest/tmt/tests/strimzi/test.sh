@@ -19,7 +19,7 @@ export CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN="${DOCKER_REGISTRY}/${DOCKER_ORG}/con
 if [[ ${RELEASE} == True ]]; then
 	export DOCKER_REGISTRY="quay.io"
 	export DOCKER_ORG="strimzi"
-	export DOCKER_TAG="$(cat release.version)"
+	export DOCKER_TAG="$(git describe --exact-match --tags)"
 fi
 
 echo "Using container registry '$DOCKER_REGISTRY'"
