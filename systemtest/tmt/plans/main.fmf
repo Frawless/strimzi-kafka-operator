@@ -141,7 +141,7 @@ prepare:
       # Build base image from previous data
       # Set quay and release tag in case the pipeline is triggered by release
       if [[ ${RELEASE} == True ]]; then
-        export BASE_IMAGE="quay.io/strimzi/kafka:$(git describe --exact-match --tags)-kafka-KAFKA_VERSION"
+        export BASE_IMAGE="quay.io/strimzi/kafka:$(git describe)-kafka-KAFKA_VERSION"
       else
         export BASE_IMAGE="${DOCKER_REGISTRY}/${DOCKER_ORG}/kafka:${DOCKER_TAG}-kafka-KAFKA_VERSION"
       fi
