@@ -125,7 +125,7 @@ prepare:
       export DOCKER_ORG="strimzi"
       export DOCKER_TAG="test"
       
-      make java_install
+      #make java_install
             
       # Build images only for non-release triggers
       if [[ ${RELEASE} != "true" ]]; then
@@ -147,8 +147,8 @@ prepare:
       fi
       
       # Build the connect image
-      eval $(./systemtest/src/test/resources/connect-build/build-connect-image.sh "$KAFKA_VERSION" "$BASE_IMAGE" "$CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN")
-      docker push $CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN
+      #eval $(./systemtest/src/test/resources/connect-build/build-connect-image.sh "$KAFKA_VERSION" "$BASE_IMAGE" "$CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN")
+      #docker push $CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN
 
 # Discover tmt defined tests in tests/ folder
 execute:
