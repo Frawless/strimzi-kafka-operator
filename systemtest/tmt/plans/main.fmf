@@ -107,6 +107,8 @@ prepare:
     how: shell
     script: |
       printenv
+      git fetch
+      git describe
       exit 1
       
       # build images
