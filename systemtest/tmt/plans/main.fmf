@@ -106,9 +106,6 @@ prepare:
   - name: Build strimzi images
     how: shell
     script: |
-      printenv
-      exit 1
-      
       # build images
       ARCH=$(uname -m)
       if [[ ${ARCH} == "aarch64" ]]; then
