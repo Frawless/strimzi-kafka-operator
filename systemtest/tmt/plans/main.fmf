@@ -135,7 +135,8 @@ prepare:
       fi
             
       # Get latest Kafka version from kafka-versions.yaml
-      export KAFKA_VERSION=$(cat kafka-versions.yaml | yq eval '.[] | select(.default) | .version' -)
+      #export KAFKA_VERSION=$(cat kafka-versions.yaml | yq eval '.[] | select(.default) | .version' -)
+      export KAFKA_VERSION=3.7.1
       # Set env var for KafkaConnect build image to avoid building images
       export CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN="${DOCKER_REGISTRY}/${DOCKER_ORG}/connect-file-sink:latest"
       # Build base image from previous data

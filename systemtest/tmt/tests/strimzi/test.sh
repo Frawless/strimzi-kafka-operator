@@ -27,6 +27,8 @@ echo "Using container org '$DOCKER_ORG'"
 echo "Using container tag '$DOCKER_TAG'"
 echo "Using CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN=$CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN"
 
+export ST_KAFKA_VERSION=3.7.1
+
 mvn compile -pl config-model-generator -DskipTests -Dmaven.javadoc.skip=true --no-transfer-progress
 # Revert profile part!
 mvn verify -pl systemtest -P smoke \
