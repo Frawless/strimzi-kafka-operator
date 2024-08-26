@@ -1,14 +1,35 @@
 # CHANGELOG
 
+## 0.44.0
+
+* Add the "Unmanaged" KafkaTopic status update.
+
+### Changes, deprecations and removals
+
+* When finalizers are enabled (default), the Topic Operator will no longer restore finalizers on unmanaged `KafkaTopic` resources if they are removed, aligning the behavior with paused topics, where finalizers are also not restored.
+  This change matches user expectations.
+
 ## 0.43.0
 
 * Add support for Apache Kafka 3.8.0.
   Remove support for Apache Kafka 3.6.0, 3.6.1, and 3.6.2.
 * Added alerts for Connectors/Tasks in failed state.
 * Support for specifying additional volumes and volume mounts in Strimzi custom resources
+* Strimzi Drain Cleaner updated to 1.2.0 (included in the Strimzi installation files)
 * Additional OAuth configuration options have been added for 'oauth' authentication on the listener and the client. 
   On the listener `serverBearerTokenLocation` and `userNamePrefix` have been added. 
   On the client `accessTokenLocation`, `clientAssertion`, `clientAssertionLocation`, `clientAssertionType`, and `saslExtensions` have been added.
+* Add support for custom Cruise Control API users
+* Update HTTP bridge to latest 0.30.0 release
+* Unregistration of KRaft nodes after scale-down
+* Update Kafka Exporter to [1.8.0](https://github.com/danielqsj/kafka_exporter/releases/tag/v1.8.0) and update the Grafana dashboard to work with it
+
+### Changes, deprecations and removals
+
+* The storage overrides for configuring per-broker storage class are deprecated and will be removed in the future.
+  If you are using the storage overrides, you should migrate to KafkaNodePool resources and use multiple node pools with a different storage class each. 
+* Strimzi 0.43.0 (and any of its patch releases) is the last Strimzi version with support for Kubernetes 1.23 and 1.24.
+  From Strimzi 0.44.0 on, we will support only Kubernetes 1.25 and newer.
 
 ## 0.42.0
 

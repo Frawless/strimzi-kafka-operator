@@ -4,7 +4,6 @@
  */
 package io.strimzi.operator.cluster;
 
-import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.LoadBalancerIngressBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
@@ -12,7 +11,6 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.ServiceBuilder;
 import io.fabric8.kubernetes.api.model.ServicePortBuilder;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.openshift.api.model.RouteBuilder;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.strimzi.api.kafka.model.bridge.KafkaBridge;
@@ -22,13 +20,10 @@ import io.strimzi.api.kafka.model.bridge.KafkaBridgeHttpConfig;
 import io.strimzi.api.kafka.model.bridge.KafkaBridgeProducerSpec;
 import io.strimzi.api.kafka.model.common.Logging;
 import io.strimzi.api.kafka.model.common.Probe;
-import io.strimzi.api.kafka.model.common.ProbeBuilder;
 import io.strimzi.api.kafka.model.common.metrics.MetricsConfig;
 import io.strimzi.api.kafka.model.connect.KafkaConnect;
 import io.strimzi.api.kafka.model.connect.KafkaConnectBuilder;
-import io.strimzi.api.kafka.model.kafka.EphemeralStorage;
 import io.strimzi.api.kafka.model.kafka.Kafka;
-import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.kafka.KafkaSpec;
 import io.strimzi.api.kafka.model.kafka.SingleVolumeStorage;
@@ -86,7 +81,6 @@ import io.strimzi.operator.common.MicrometerMetricsProvider;
 import io.strimzi.operator.common.Reconciliation;
 import io.strimzi.operator.common.auth.PemAuthIdentity;
 import io.strimzi.operator.common.auth.PemTrustSet;
-import io.strimzi.operator.common.auth.TlsPemIdentity;
 import io.strimzi.operator.common.model.Ca;
 import io.strimzi.operator.common.model.Labels;
 import io.strimzi.test.TestUtils;
@@ -106,12 +100,12 @@ import org.apache.kafka.clients.admin.FinalizedVersionRange;
 import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.admin.QuorumInfo;
 import org.apache.kafka.clients.admin.TopicListing;
+import org.apache.kafka.clients.admin.UnregisterBrokerResult;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.internals.KafkaFutureImpl;
 import org.apache.kafka.common.quota.ClientQuotaEntity;
 import org.apache.kafka.server.common.MetadataVersion;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.admin.ZooKeeperAdmin;
 
@@ -119,6 +113,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
@@ -127,10 +122,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
@@ -146,78 +141,7 @@ import static org.mockito.Mockito.when;
     "checkstyle:ClassFanOutComplexity"
 })
 public class ResourceUtils {
-
-    private ResourceUtils() {
-
-    }
-
-    public static Kafka createKafka(String namespace, String name, int replicas,
-                                    String image, int healthDelay, int healthTimeout) {
-        Probe probe = new ProbeBuilder()
-                .withInitialDelaySeconds(healthDelay)
-                .withTimeoutSeconds(healthTimeout)
-                .withFailureThreshold(10)
-                .withSuccessThreshold(4)
-                .withPeriodSeconds(33)
-                .build();
-
-        ObjectMeta meta = new ObjectMetaBuilder()
-            .withNamespace(namespace)
-            .withName(name)
-            .withLabels(Labels.fromMap(singletonMap("my-user-label", "cromulent")).toMap())
-            .build();
-
-        KafkaBuilder builder = new KafkaBuilder();
-        return builder.withMetadata(meta)
-                .withNewSpec()
-                    .withNewKafka()
-                        .withReplicas(replicas)
-                        .withImage(image)
-                        .withListeners(new GenericKafkaListenerBuilder()
-                                    .withName("plain")
-                                    .withPort(9092)
-                                    .withType(KafkaListenerType.INTERNAL)
-                                    .withTls(false)
-                                    .build(),
-                                new GenericKafkaListenerBuilder()
-                                    .withName("tls")
-                                    .withPort(9093)
-                                    .withType(KafkaListenerType.INTERNAL)
-                                    .withTls(true)
-                                    .build())
-                        .withLivenessProbe(probe)
-                        .withReadinessProbe(probe)
-                        .withStorage(new EphemeralStorage())
-                    .endKafka()
-                    .withNewZookeeper()
-                        .withReplicas(replicas)
-                        .withImage(image + "-zk")
-                        .withLivenessProbe(probe)
-                        .withReadinessProbe(probe)
-                        .withStorage(new EphemeralStorage())
-                    .endZookeeper()
-                .endSpec()
-                .build();
-    }
-
-    public static Kafka createKafka(String namespace, String name, int replicas,
-                                    String image, int healthDelay, int healthTimeout,
-                                    MetricsConfig metricsConfig,
-                                    Map<String, Object> kafkaConfigurationJson,
-                                    Map<String, Object> zooConfigurationJson) {
-        return new KafkaBuilder(createKafka(namespace, name, replicas, image, healthDelay, healthTimeout))
-                .editSpec()
-                    .editKafka()
-                        .withConfig(kafkaConfigurationJson)
-                        .withMetricsConfig(metricsConfig)
-                    .endKafka()
-                    .editZookeeper()
-                        .withConfig(zooConfigurationJson)
-                        .withMetricsConfig(metricsConfig)
-                    .endZookeeper()
-                .endSpec()
-                .build();
-    }
+    private ResourceUtils() { }
 
     public static Secret createInitialCaCertSecret(String clusterNamespace, String clusterName, String secretName,
                                                    String caCert, String caStore, String caStorePassword) {
@@ -243,24 +167,6 @@ public class ResourceUtils {
                     .withLabels(Labels.forStrimziCluster(clusterName).withStrimziKind(Kafka.RESOURCE_KIND).toMap())
                 .endMetadata()
                 .addToData("ca.key", caKey)
-                .build();
-    }
-
-    public static Kafka createKafka(String namespace, String name, int replicas,
-                                    String image, int healthDelay, int healthTimeout,
-                                    MetricsConfig metricsConfig,
-                                    Map<String, Object> kafkaConfigurationJson,
-                                    Logging kafkaLogging, Logging zkLogging) {
-        return new KafkaBuilder(createKafka(namespace, name, replicas, image, healthDelay,
-                    healthTimeout, metricsConfig, kafkaConfigurationJson, emptyMap()))
-                .editSpec()
-                    .editKafka()
-                        .withLogging(kafkaLogging)
-                    .endKafka()
-                    .editZookeeper()
-                        .withLogging(zkLogging)
-                    .endZookeeper()
-                .endSpec()
                 .build();
     }
 
@@ -368,6 +274,7 @@ public class ResourceUtils {
     /**
      * Create an empty Kafka MirrorMaker custom resource
      */
+    @SuppressWarnings("deprecation")
     public static KafkaMirrorMaker createEmptyKafkaMirrorMaker(String namespace, String name) {
         return new KafkaMirrorMakerBuilder()
                 .withMetadata(new ObjectMetaBuilder()
@@ -415,7 +322,7 @@ public class ResourceUtils {
         return builder.build();
     }
 
-    public static KafkaBridge createKafkaBridge(String namespace, String name, String image, int replicas, String bootstrapservers, KafkaBridgeProducerSpec producer, KafkaBridgeConsumerSpec consumer, KafkaBridgeHttpConfig http, boolean enableMetrics) {
+    public static KafkaBridge createKafkaBridge(String namespace, String name, String image, int replicas, String bootstrapServers, KafkaBridgeProducerSpec producer, KafkaBridgeConsumerSpec consumer, KafkaBridgeHttpConfig http, boolean enableMetrics) {
         return new KafkaBridgeBuilder()
                 .withMetadata(new ObjectMetaBuilder()
                         .withName(name)
@@ -426,7 +333,7 @@ public class ResourceUtils {
                 .withNewSpec()
                     .withImage(image)
                     .withReplicas(replicas)
-                    .withBootstrapServers(bootstrapservers)
+                    .withBootstrapServers(bootstrapServers)
                     .withProducer(producer)
                     .withConsumer(consumer)
                     .withEnableMetrics(enableMetrics)
@@ -467,18 +374,20 @@ public class ResourceUtils {
 
     public static void cleanUpTemporaryTLSFiles() {
         String tmpString = "/tmp";
-        try {
-            Files.list(Paths.get(tmpString)).filter(path -> path.toString().startsWith(tmpString + "/tls")).forEach(delPath -> {
+        try (Stream<Path> files = Files.list(Paths.get(tmpString))) {
+            files.filter(path -> path.toString().startsWith(tmpString + "/tls")).forEach(delPath -> {
                 try {
                     Files.deleteIfExists(delPath);
                 } catch (IOException e) {
+                    // Nothing to do
                 }
             });
         } catch (IOException e) {
+            // Nothing to do
         }
     }
 
-    public static ZookeeperLeaderFinder zookeeperLeaderFinder(Vertx vertx, KubernetesClient client) {
+    public static ZookeeperLeaderFinder zookeeperLeaderFinder(Vertx vertx) {
         return new ZookeeperLeaderFinder(vertx, () -> new BackOff(5_000, 2, 4)) {
                 @Override
                 protected Future<Boolean> isLeader(Reconciliation reconciliation, String podName, NetClientOptions options) {
@@ -532,7 +441,7 @@ public class ResourceUtils {
         }
         when(mock.describeConfigs(any())).thenReturn(dcfr);
 
-        // Mocks the describeFeatures() call used in KRaft to manege metadata version
+        // Mocks the describeFeatures() call used in KRaft to manage metadata version
         DescribeFeaturesResult dfr;
         try {
             Constructor<DescribeFeaturesResult> declaredConstructor = DescribeFeaturesResult.class.getDeclaredConstructor(KafkaFuture.class);
@@ -544,7 +453,7 @@ public class ResourceUtils {
 
             short metadataLevel = MetadataVersion.fromVersionString(KafkaVersionTestUtils.getKafkaVersionLookup().defaultVersion().metadataVersion()).featureLevel();
             FinalizedVersionRange finalizedVersionRange = declaredConstructor3.newInstance(metadataLevel, metadataLevel);
-            FeatureMetadata featureMetadata = declaredConstructor2.newInstance(Map.of(MetadataVersion.FEATURE_NAME, finalizedVersionRange), Optional.ofNullable(null), Map.of());
+            FeatureMetadata featureMetadata = declaredConstructor2.newInstance(Map.of(MetadataVersion.FEATURE_NAME, finalizedVersionRange), Optional.empty(), Map.of());
             KafkaFuture<FeatureMetadata> kafkaFuture = KafkaFutureImpl.completedFuture(featureMetadata);
             dfr = declaredConstructor.newInstance(kafkaFuture);
         } catch (ReflectiveOperationException e) {
@@ -591,6 +500,11 @@ public class ResourceUtils {
 
         when(mock.describeClientQuotas(any())).thenReturn(dcqr);
 
+        // Mock KRaft node unregistration
+        UnregisterBrokerResult ubr = mock(UnregisterBrokerResult.class);
+        when(ubr.all()).thenReturn(KafkaFuture.completedFuture(null));
+        when(mock.unregisterBroker(anyInt())).thenReturn(ubr);
+
         return mock;
     }
 
@@ -634,12 +548,7 @@ public class ResourceUtils {
     }
 
     public static KafkaAgentClientProvider kafkaAgentClientProvider(KafkaAgentClient mockKafkaAgentClient) {
-        return new KafkaAgentClientProvider() {
-            @Override
-            public KafkaAgentClient createKafkaAgentClient(Reconciliation reconciliation, TlsPemIdentity tlsPemIdentity) {
-                return mockKafkaAgentClient;
-            }
-        };
+        return (reconciliation, tlsPemIdentity) -> mockKafkaAgentClient;
     }
 
     public static ZooKeeperAdmin zooKeeperAdmin() {
@@ -653,12 +562,7 @@ public class ResourceUtils {
     }
 
     public static ZooKeeperAdminProvider zooKeeperAdminProvider(ZooKeeperAdmin mockZooKeeperAdmin) {
-        return new ZooKeeperAdminProvider() {
-            @Override
-            public ZooKeeperAdmin createZookeeperAdmin(String connectString, int sessionTimeout, Watcher watcher, long operationTimeoutMs, String trustStoreFile, String keyStoreFile) throws IOException {
-                return mockZooKeeperAdmin;
-            }
-        };
+        return (connectString, sessionTimeout, watcher, operationTimeoutMs, trustStoreFile, keyStoreFile) -> mockZooKeeperAdmin;
     }
 
     public static MetricsProvider metricsProvider() {
@@ -770,17 +674,5 @@ public class ResourceUtils {
         return new ClusterOperatorConfigBuilder(dummyClusterOperatorConfig(), KafkaVersionTestUtils.getKafkaVersionLookup())
                 .with(ClusterOperatorConfig.FEATURE_GATES.key(), featureGates)
                 .build();
-    }
-
-    /**
-     * Find the first resource in the given resources with the given name.
-     * @param resources The resources to search.
-     * @param name The name of the resource.
-     * @return The first resource with that name. Names should be unique per namespace.
-     */
-    public static <T extends HasMetadata> T findResourceWithName(List<T> resources, String name) {
-        return resources.stream()
-                .filter(s -> s.getMetadata().getName().equals(name)).findFirst()
-                .orElse(null);
     }
 }

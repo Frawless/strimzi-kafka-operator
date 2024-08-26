@@ -5,6 +5,7 @@
 package io.strimzi.systemtest.kafka;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.ConfigMapVolumeSourceBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -12,14 +13,21 @@ import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.SecretVolumeSourceBuilder;
 import io.fabric8.kubernetes.api.model.SecurityContextBuilder;
 import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.VolumeMount;
+import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
+import io.strimzi.api.kafka.model.bridge.KafkaBridgeResources;
 import io.strimzi.api.kafka.model.common.JvmOptions;
 import io.strimzi.api.kafka.model.common.JvmOptionsBuilder;
 import io.strimzi.api.kafka.model.common.SystemProperty;
 import io.strimzi.api.kafka.model.common.SystemPropertyBuilder;
+import io.strimzi.api.kafka.model.common.template.AdditionalVolume;
+import io.strimzi.api.kafka.model.common.template.AdditionalVolumeBuilder;
 import io.strimzi.api.kafka.model.common.template.ResourceTemplate;
 import io.strimzi.api.kafka.model.common.template.ResourceTemplateBuilder;
+import io.strimzi.api.kafka.model.connect.KafkaConnectResources;
 import io.strimzi.api.kafka.model.kafka.JbodStorage;
 import io.strimzi.api.kafka.model.kafka.JbodStorageBuilder;
 import io.strimzi.api.kafka.model.kafka.Kafka;
@@ -48,9 +56,12 @@ import io.strimzi.systemtest.resources.crd.KafkaNodePoolResource;
 import io.strimzi.systemtest.resources.crd.KafkaResource;
 import io.strimzi.systemtest.resources.crd.StrimziPodSetResource;
 import io.strimzi.systemtest.storage.TestStorage;
+import io.strimzi.systemtest.templates.crd.KafkaBridgeTemplates;
+import io.strimzi.systemtest.templates.crd.KafkaConnectTemplates;
 import io.strimzi.systemtest.templates.crd.KafkaNodePoolTemplates;
 import io.strimzi.systemtest.templates.crd.KafkaTemplates;
 import io.strimzi.systemtest.templates.crd.KafkaTopicTemplates;
+import io.strimzi.systemtest.templates.kubernetes.ConfigMapTemplates;
 import io.strimzi.systemtest.utils.ClientUtils;
 import io.strimzi.systemtest.utils.RollingUpdateUtils;
 import io.strimzi.systemtest.utils.StUtils;
@@ -61,6 +72,7 @@ import io.strimzi.systemtest.utils.kubeUtils.controllers.DeploymentUtils;
 import io.strimzi.systemtest.utils.kubeUtils.controllers.StrimziPodSetUtils;
 import io.strimzi.systemtest.utils.kubeUtils.objects.PersistentVolumeClaimUtils;
 import io.strimzi.systemtest.utils.kubeUtils.objects.PodUtils;
+import io.strimzi.systemtest.utils.kubeUtils.objects.SecretUtils;
 import io.strimzi.systemtest.utils.kubeUtils.objects.ServiceUtils;
 import io.strimzi.test.TestUtils;
 import org.apache.logging.log4j.LogManager;
@@ -69,12 +81,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static io.strimzi.systemtest.TestConstants.BRIDGE;
+import static io.strimzi.systemtest.TestConstants.CONNECT;
 import static io.strimzi.systemtest.TestConstants.CRUISE_CONTROL;
 import static io.strimzi.systemtest.TestConstants.INTERNAL_CLIENTS_USED;
 import static io.strimzi.systemtest.TestConstants.LOADBALANCER_SUPPORTED;
@@ -88,13 +103,13 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @Tag(REGRESSION)
 @SuppressWarnings("checkstyle:ClassFanOutComplexity")
 class KafkaST extends AbstractST {
     private static final Logger LOGGER = LogManager.getLogger(KafkaST.class);
     private static final String OPENSHIFT_CLUSTER_NAME = "openshift-my-cluster";
-
 
     /**
      * @description This test case verifies that Pod's resources (limits and requests), custom JVM configurations, and expected Java configuration
@@ -169,7 +184,7 @@ class KafkaST extends AbstractST {
             )
         );
 
-        Kafka kafka = KafkaTemplates.kafkaEphemeral(testStorage.getClusterName(), 1, 1)
+        Kafka kafka = KafkaTemplates.kafkaEphemeral(testStorage.getNamespaceName(), testStorage.getClusterName(), 1, 1)
             .editSpec()
                 .editKafka()
                     .withResources(brokersResReq)
@@ -320,7 +335,7 @@ class KafkaST extends AbstractST {
                 KafkaNodePoolTemplates.controllerPool(testStorage.getNamespaceName(), testStorage.getControllerPoolName(), testStorage.getClusterName(), 3).build()
             )
         );
-        resourceManager.createResourceWithWait(KafkaTemplates.kafkaEphemeral(testStorage.getClusterName(), 3).build());
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaEphemeral(testStorage.getNamespaceName(), testStorage.getClusterName(), 3).build());
 
         Map<String, String> eoSnapshot = DeploymentUtils.depSnapshot(testStorage.getNamespaceName(), KafkaResources.entityOperatorDeploymentName(testStorage.getClusterName()));
 
@@ -425,7 +440,7 @@ class KafkaST extends AbstractST {
             )
         );
 
-        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getClusterName(), kafkaReplicas)
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getNamespaceName(), testStorage.getClusterName(), kafkaReplicas)
             .editSpec()
                 .editKafka()
                     .withStorage(jbodStorage)
@@ -490,7 +505,7 @@ class KafkaST extends AbstractST {
                 KafkaNodePoolTemplates.controllerPoolPersistentStorage(testStorage.getNamespaceName(), testStorage.getControllerPoolName(), testStorage.getClusterName(), 1).build()
             )
         );
-        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getClusterName(), 3, 1).build());
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getNamespaceName(), testStorage.getClusterName(), 3, 1).build());
 
         final String brokerSecret = testStorage.getClusterName() + "-kafka-brokers";
 
@@ -622,7 +637,7 @@ class KafkaST extends AbstractST {
             )
         );
 
-        final KafkaBuilder kafkaBuilder = KafkaTemplates.kafkaPersistent(testStorage.getClusterName(), 3, 1)
+        final KafkaBuilder kafkaBuilder = KafkaTemplates.kafkaPersistent(testStorage.getNamespaceName(), testStorage.getClusterName(), 3, 1)
             .editMetadata()
                 .withLabels(customSpecifiedLabels)
             .endMetadata()
@@ -897,7 +912,7 @@ class KafkaST extends AbstractST {
                 KafkaNodePoolTemplates.controllerPoolPersistentStorage(testStorage.getNamespaceName(), testStorage.getControllerPoolName(), testStorage.getClusterName(), 1).build()
             )
         );
-        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getClusterName(), 1, 1)
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getNamespaceName(), testStorage.getClusterName(), 1, 1)
             .editSpec()
                 .editKafka()
                     .withConfig(kafkaConfig)
@@ -907,7 +922,7 @@ class KafkaST extends AbstractST {
 
         Map<String, String> brokerPodsSnapshot = PodUtils.podSnapshot(testStorage.getNamespaceName(), testStorage.getBrokerSelector());
 
-        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getClusterName(), testStorage.getTopicName(), 1, 1, testStorage.getNamespaceName()).build());
+        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getNamespaceName(), testStorage.getTopicName(), testStorage.getClusterName(), 1, 1).build());
 
         String brokerPodName = kubeClient().listPods(testStorage.getNamespaceName(), testStorage.getBrokerSelector()).get(0).getMetadata().getName();
 
@@ -983,7 +998,7 @@ class KafkaST extends AbstractST {
     void testReadOnlyRootFileSystem() {
         final TestStorage testStorage = new TestStorage(ResourceManager.getTestContext());
 
-        Kafka kafka = KafkaTemplates.kafkaPersistent(testStorage.getClusterName(), 3, 3)
+        Kafka kafka = KafkaTemplates.kafkaPersistent(testStorage.getNamespaceName(), testStorage.getClusterName(), 3, 3)
                 .editSpec()
                     .editKafka()
                         .withNewTemplate()
@@ -1073,7 +1088,7 @@ class KafkaST extends AbstractST {
                 KafkaNodePoolTemplates.controllerPool(testStorage.getNamespaceName(), testStorage.getControllerPoolName(), testStorage.getClusterName(), 1).build()
             )
         );
-        resourceManager.createResourceWithoutWait(KafkaTemplates.kafkaEphemeral(testStorage.getClusterName(), 1, 1)
+        resourceManager.createResourceWithoutWait(KafkaTemplates.kafkaEphemeral(testStorage.getNamespaceName(), testStorage.getClusterName(), 1, 1)
             .editSpec()
                 .editKafka()
                     .withVersion(nonExistingVersion)
@@ -1137,7 +1152,7 @@ class KafkaST extends AbstractST {
                 KafkaNodePoolTemplates.controllerPoolPersistentStorage(testStorage.getNamespaceName(), testStorage.getControllerPoolName(), testStorage.getClusterName(), 3).build()
             )
         );
-        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getClusterName(), numberOfKafkaReplicas, 3)
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getNamespaceName(), testStorage.getClusterName(), numberOfKafkaReplicas, 3)
             .editSpec()
                 .editKafka()
                     .withStorage(
@@ -1156,7 +1171,7 @@ class KafkaST extends AbstractST {
         // ##############################
         // Setup topic, which has 3 replicas and 2 min.isr
 
-        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getClusterName(), testStorage.getContinuousTopicName(), 3, 3, 2, testStorage.getNamespaceName()).build());
+        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getNamespaceName(), testStorage.getContinuousTopicName(), testStorage.getClusterName(), 3, 3, 2).build());
 
         String producerAdditionConfiguration = "delivery.timeout.ms=40000\nrequest.timeout.ms=5000";
         // Add transactional id to make producer transactional
@@ -1219,6 +1234,262 @@ class KafkaST extends AbstractST {
         // ##############################
         ClientUtils.waitForContinuousClientSuccess(testStorage, continuousClientsMessageCount);
         // ##############################
+    }
+
+    /**
+     * @description This test case verifies basic working of Kafka Cluster managed by Cluster Operator with KRaft.
+     *
+     * @steps
+     *  1. - Deploy Kafka annotated to enable KRaft (and additionally annotated to enable management by KafkaNodePool due to default usage of NodePools), and KafkaNodePool targeting given Kafka Cluster.
+     *     - Kafka is deployed, KafkaNodePool custom resource is targeting Kafka Cluster as expected.
+     *  2. - Produce and consume messages in given Kafka Cluster.
+     *     - Clients can produce and consume messages.
+     *  3. - Trigger manual Rolling Update.
+     *     - Rolling update is triggered and completed shortly after.
+     *
+     * @usecase
+     *  - kafka-node-pool
+     *  - kraft
+     */
+    @ParallelNamespaceTest()
+    void testKRaftMode() {
+        assumeTrue(Environment.isKRaftModeEnabled() && Environment.isKafkaNodePoolsEnabled());
+
+        final TestStorage testStorage = new TestStorage(ResourceManager.getTestContext());
+        final int kafkaReplicas = 3;
+
+        resourceManager.createResourceWithWait(
+            KafkaNodePoolTemplates.brokerPoolPersistentStorage(testStorage.getNamespaceName(), testStorage.getBrokerPoolName(), testStorage.getClusterName(), kafkaReplicas).build(),
+            KafkaNodePoolTemplates.controllerPoolPersistentStorage(testStorage.getNamespaceName(), testStorage.getControllerPoolName(), testStorage.getClusterName(), kafkaReplicas).build(),
+            KafkaTemplates.kafkaPersistentKRaft(testStorage.getNamespaceName(), testStorage.getClusterName(), kafkaReplicas).build()
+        );
+
+        // Check that there is no ZooKeeper
+        Map<String, String> zkPods = PodUtils.podSnapshot(testStorage.getNamespaceName(),
+            KafkaResource.getLabelSelector(testStorage.getClusterName(), KafkaResources.zookeeperComponentName(testStorage.getClusterName())));
+        assertThat("No ZooKeeper Pods should exist", zkPods.size(), is(0));
+
+        // create KafkaTopic with replication factor on all brokers and min.insync replicas configuration to not loss data during Rolling Update.
+        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getNamespaceName(), testStorage.getContinuousTopicName(), testStorage.getClusterName(), 1, kafkaReplicas, kafkaReplicas - 1).build());
+
+        KafkaClients clients = ClientUtils.getContinuousPlainClientBuilder(testStorage).build();
+        LOGGER.info("Producing and Consuming messages with continuous clients: {}, {} in Namespace {}", testStorage.getContinuousProducerName(), testStorage.getContinuousConsumerName(), testStorage.getNamespaceName());
+        resourceManager.createResourceWithWait(
+            clients.producerStrimzi(),
+            clients.consumerStrimzi()
+        );
+
+        // Roll Kafka
+        LOGGER.info("Forcing rolling update of Kafka via read-only configuration change");
+        final Map<String, String> brokerPods = PodUtils.podSnapshot(testStorage.getNamespaceName(), testStorage.getBrokerPoolSelector());
+        KafkaResource.replaceKafkaResourceInSpecificNamespace(testStorage.getClusterName(), k -> k.getSpec().getKafka().getConfig().put("log.retention.hours", 72), testStorage.getNamespaceName());
+
+        LOGGER.info("Waiting for the next reconciliation to happen");
+        RollingUpdateUtils.waitTillComponentHasRolled(testStorage.getNamespaceName(), testStorage.getBrokerPoolSelector(), kafkaReplicas, brokerPods);
+
+        LOGGER.info("Waiting for clients to finish sending/receiving messages");
+        ClientUtils.waitForContinuousClientSuccess(testStorage);
+    }
+
+    /**
+     * @description This test validates the mounting and usage of additional volumes for Kafka, Kafka Connect, and Kafka Bridge components.
+     * It tests whether secret and config map volumes are correctly created, mounted, and accessible across various deployments.
+     *
+     * @steps
+     *  1. - Setup environment prerequisites and configure test storage.
+     *     - Ensure the environment is in KRaft mode.
+     *  2. - Create necessary Kafka resources with additional volumes for secrets and config maps.
+     *     - Resources are correctly instantiated with specified volumes.
+     *  3. - Deploy Kafka, Kafka Connect, and Kafka Bridge with these volumes.
+     *     - Components are correctly configured with additional volumes.
+     *  4. - Verify that all pods (Kafka, Connect, and Bridge) have additional volumes mounted and accessible.
+     *     - Volumes are correctly mounted and usable within pods.
+     *
+     * @usecase
+     *  - additional-volumes
+     *  - secrets-management
+     *  - configuration-management
+     */
+    @ParallelNamespaceTest
+    @Tag(CONNECT)
+    @Tag(BRIDGE)
+    void testAdditionalVolumes() {
+        assumeTrue(Environment.isKRaftModeEnabled());
+
+        final TestStorage testStorage = new TestStorage(ResourceManager.getTestContext());
+        final int numberOfKafkaReplicas = 3;
+        final String configMapName = "example-configmap";
+        final String secretName = "example-secret";
+        final String secretKey = "apikey123456";
+        final String secretValue = "password123";
+        final String secretKeyBase64 = Base64.getEncoder().encodeToString(secretKey.getBytes());
+        final String secretValueBase64 = Base64.getEncoder().encodeToString(secretValue.getBytes());
+        final String secretMountPath = "/mnt/secret-volume";
+
+        final String configMapKey = "ENV_VAR_EXAMPLE";
+        final String configMapValue = "VALUE";
+        final String configMapMountPath = "/mnt/configmap-volume";
+
+        resourceManager.createResourceWithWait(
+            NodePoolsConverter.convertNodePoolsIfNeeded(
+                KafkaNodePoolTemplates.brokerPoolPersistentStorage(testStorage.getNamespaceName(), testStorage.getBrokerPoolName(), testStorage.getClusterName(), numberOfKafkaReplicas).build(),
+                KafkaNodePoolTemplates.controllerPoolPersistentStorage(testStorage.getNamespaceName(), testStorage.getControllerPoolName(), testStorage.getClusterName(), 3).build()
+            )
+        );
+
+        SecretUtils.createSecret(testStorage.getNamespaceName(), secretName, secretKeyBase64, secretValueBase64);
+        resourceManager.createResourceWithWait(ConfigMapTemplates.buildConfigMap(testStorage.getNamespaceName(), configMapName,
+            configMapKey, configMapValue));
+
+        AdditionalVolume[] additionalVolumes = new AdditionalVolume[]{
+            // Secret additional volume
+            new AdditionalVolumeBuilder()
+                .withName(secretName)
+                .withSecret(new SecretVolumeSourceBuilder()
+                    .withSecretName(secretName)
+                    .build())
+                .build(),
+            // ConfigMap additional volume
+            new AdditionalVolumeBuilder()
+                .withName(configMapName)
+                .withConfigMap(new ConfigMapVolumeSourceBuilder()
+                    .withName(configMapName)
+                    .build())
+                .build()
+        };
+        VolumeMount[] volumeMounts = new VolumeMount[]{
+            new VolumeMountBuilder()
+                .withName(secretName)
+                .withMountPath(secretMountPath)
+                .build(),
+            new VolumeMountBuilder()
+                .withName(configMapName)
+                .withMountPath(configMapMountPath)
+                .build()
+        };
+
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getNamespaceName(), testStorage.getClusterName(), numberOfKafkaReplicas, 3)
+            .editSpec()
+                .editKafka()
+                    .editTemplate()
+                        .editPod()
+                            .addToVolumes(additionalVolumes)
+                        .endPod()
+                        .editKafkaContainer()
+                            .addToVolumeMounts(volumeMounts)
+                        .endKafkaContainer()
+                    .endTemplate()
+                .endKafka()
+            .endSpec()
+            .build());
+
+        resourceManager.createResourceWithWait(KafkaConnectTemplates.kafkaConnect(testStorage.getNamespaceName(), testStorage.getClusterName(), 1)
+            .editSpec()
+                .editTemplate()
+                    .editPod()
+                        .addToVolumes(additionalVolumes)
+                    .endPod()
+                    .editConnectContainer()
+                        .addToVolumeMounts(volumeMounts)
+                    .endConnectContainer()
+                .endTemplate()
+            .endSpec()
+            .build());
+
+        resourceManager.createResourceWithWait(KafkaBridgeTemplates.kafkaBridge(testStorage.getNamespaceName(), testStorage.getClusterName(),
+                        KafkaResources.plainBootstrapAddress(testStorage.getClusterName()), 1)
+            .editSpec()
+                .editTemplate()
+                    .editPod()
+                        .addToVolumes(additionalVolumes)
+                    .endPod()
+                    .editBridgeContainer()
+                        .addToVolumeMounts(volumeMounts)
+                    .endBridgeContainer()
+                .endTemplate()
+            .endSpec()
+            .build());
+
+        // 1. check Kafka pods
+        List<Pod> kafkaPods = kubeClient(testStorage.getNamespaceName())
+                .listPodsByPrefixInName(testStorage.getBrokerComponentName());
+        // controller pods
+        kafkaPods.addAll(kubeClient(testStorage.getNamespaceName())
+                .listPodsByPrefixInName(testStorage.getControllerComponentName()));
+
+        for (Pod kafkaPod : kafkaPods) {
+            verifyPodSecretVolume(testStorage.getNamespaceName(), kafkaPod, "kafka", secretMountPath, secretValueBase64, secretKeyBase64);
+            verifyPodConfigMapVolume(testStorage.getNamespaceName(), kafkaPod, "kafka", configMapMountPath, configMapValue, configMapKey);
+        }
+
+        // 2. check Connect pods
+        List<Pod> connectPods = kubeClient(testStorage.getNamespaceName()).listPods(Labels.STRIMZI_NAME_LABEL, KafkaConnectResources.componentName(testStorage.getClusterName()));
+        for (Pod connectPod : connectPods) {
+            verifyPodSecretVolume(testStorage.getNamespaceName(), connectPod, KafkaConnectResources.componentName(testStorage.getClusterName()), secretMountPath, secretValueBase64, secretKeyBase64);
+            verifyPodConfigMapVolume(testStorage.getNamespaceName(), connectPod, KafkaConnectResources.componentName(testStorage.getClusterName()), configMapMountPath, configMapValue, configMapKey);
+        }
+
+        // 3. check Bridge pods
+        List<Pod> bridgePods = kubeClient(testStorage.getNamespaceName()).listPods(Labels.STRIMZI_NAME_LABEL, KafkaBridgeResources.componentName(testStorage.getClusterName()));
+
+        for (Pod bridgePod : bridgePods) {
+            verifyPodSecretVolume(testStorage.getNamespaceName(), bridgePod, KafkaBridgeResources.componentName(testStorage.getClusterName()), secretMountPath, secretValueBase64, secretKeyBase64);
+            verifyPodConfigMapVolume(testStorage.getNamespaceName(), bridgePod, KafkaBridgeResources.componentName(testStorage.getClusterName()), configMapMountPath, configMapValue, configMapKey);
+        }
+    }
+
+    /**
+     * Verifies the configuration and content of a secret volume mounted in a specified Kubernetes pod.
+     * This includes checks to ensure the secret is mounted at the specified path and contains the expected Base64-encoded value.
+     *
+     * @param namespace         The Kubernetes namespace in which the pod is located.
+     * @param pod               The pod object to verify.
+     * @param secretMountPath   The mount path for the secret volume.
+     * @param secretValueBase64 The expected Base64-encoded value of the secret to be verified.
+     * @param secretKeyBase64   The key within the secret volume used to access the secret content.
+     * @param containerName     The name of the container in the pod where the check is to be performed.
+     */
+    private void verifyPodSecretVolume(final String namespace, final Pod pod, final String containerName,
+                                       final String secretMountPath, final String secretValueBase64, final String secretKeyBase64) {
+        final String podName = pod.getMetadata().getName();
+        final String secretMountCheck = cmdKubeClient().namespace(namespace)
+                .execInPodContainer(podName, containerName, "sh", "-c", "cat /proc/mounts | grep " + secretMountPath).out().trim();
+
+        // Assert that secret mount exists
+        assertThat(secretMountCheck, containsString(secretMountPath));
+
+        // Verify content inside the secret volume
+        final String secretContentCheck = cmdKubeClient().namespace(namespace)
+                .execInPodContainer(podName, containerName, "sh", "-c", "cat " + secretMountPath + "/" + secretKeyBase64).out().trim();
+
+        assertThat(secretContentCheck, is(secretValueBase64));
+    }
+
+    /**
+     * Verifies the configuration and content of a config map volume mounted in a specified Kubernetes pod.
+     * This includes checks to ensure the config map is mounted at the specified path and contains the expected value.
+     *
+     * @param namespace            The Kubernetes namespace in which the pod is located.
+     * @param pod                  The pod object to verify.
+     * @param configMapMountPath   The mount path for the config map volume.
+     * @param configMapValue       The expected value of the config map to be verified.
+     * @param configMapKey         The key within the config map volume used to access the config map content.
+     * @param containerName        The name of the container in the pod where the check is to be performed.
+     */
+    private void verifyPodConfigMapVolume(final String namespace, final Pod pod, final String containerName,
+                                          final String configMapMountPath, final String configMapValue, final String configMapKey) {
+        final String podName = pod.getMetadata().getName();
+        final String configMountCheck = cmdKubeClient().namespace(namespace)
+            .execInPodContainer(podName, containerName, "sh", "-c", "cat /proc/mounts | grep " + configMapMountPath).out().trim();
+
+        // Assert that config map mount exists
+        assertThat(configMountCheck, containsString(configMapMountPath));
+
+        // Verify content inside the config map volume
+        final String configContentCheck = cmdKubeClient().namespace(namespace)
+                .execInPodContainer(podName, containerName, "sh", "-c", "cat " + configMapMountPath + "/" + configMapKey).out().trim();
+
+        assertThat(configContentCheck, is(configMapValue));
     }
 
     void verifyVolumeNamesAndLabels(String namespaceName, String clusterName, String podSetName, int kafkaReplicas, int diskCountPerReplica, String diskSizeGi) {

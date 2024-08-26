@@ -6,6 +6,9 @@ package io.strimzi.systemtest.kafka;
 
 
 import io.fabric8.kubernetes.api.model.LabelSelector;
+import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaResources;
+import io.strimzi.api.kafka.model.kafka.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import io.strimzi.operator.common.Annotations;
@@ -90,7 +93,7 @@ public class KafkaNodePoolST extends AbstractST {
                     .withAnnotations(Map.of(Annotations.ANNO_STRIMZI_IO_NEXT_NODE_IDS, "[91-93]"))
                 .endMetadata()
                 .build(),
-            KafkaTemplates.kafkaPersistent(testStorage.getClusterName(), 1, 1).build()
+            KafkaTemplates.kafkaPersistent(testStorage.getNamespaceName(), testStorage.getClusterName(), 1, 1).build()
         );
 
         PodUtils.waitUntilPodStabilityReplicasCount(testStorage.getNamespaceName(), KafkaResource.getStrimziPodSetName(testStorage.getClusterName(), nodePoolNameInitial), 2);
@@ -200,11 +203,11 @@ public class KafkaNodePoolST extends AbstractST {
 
         resourceManager.createResourceWithWait(
             KafkaNodePoolTemplates.mixedPoolPersistentStorage(testStorage.getNamespaceName(), volatileRolePoolName, testStorage.getClusterName(), 3).build(),
-            KafkaTemplates.kafkaPersistent(testStorage.getClusterName(), 1, 1).build()
+            KafkaTemplates.kafkaPersistent(testStorage.getNamespaceName(), testStorage.getClusterName(), 1, 1).build()
         );
 
         LOGGER.info("Create KafkaTopic {}/{} with 6 replicas, spawning across all brokers", testStorage.getNamespaceName(), testStorage.getTopicName());
-        final KafkaTopic kafkaTopic = KafkaTopicTemplates.topic(testStorage.getClusterName(), testStorage.getTopicName(), 1, 6, testStorage.getNamespaceName()).build();
+        final KafkaTopic kafkaTopic = KafkaTopicTemplates.topic(testStorage.getNamespaceName(), testStorage.getTopicName(), testStorage.getClusterName(), 1, 6).build();
         resourceManager.createResourceWithWait(kafkaTopic);
 
         LOGGER.info("wait for Kafka pods stability");
@@ -282,7 +285,7 @@ public class KafkaNodePoolST extends AbstractST {
         resourceManager.createResourceWithWait(
             KafkaNodePoolTemplates.brokerPoolPersistentStorage(testStorage.getNamespaceName(), poolAName, testStorage.getClusterName(), 1).build(),
             KafkaNodePoolTemplates.brokerPoolPersistentStorage(testStorage.getNamespaceName(), poolB1Name, testStorage.getClusterName(), brokerNodePoolReplicaCount).build(),
-            KafkaTemplates.kafkaPersistent(testStorage.getClusterName(), 1, 3)
+            KafkaTemplates.kafkaPersistent(testStorage.getNamespaceName(), testStorage.getClusterName(), 1, 3)
                 .editOrNewSpec()
                     .editKafka()
                         .addToConfig("auto.create.topics.enable", "false")  // topics replica count helps ensure there are enough brokers
@@ -312,9 +315,132 @@ public class KafkaNodePoolST extends AbstractST {
         transmitMessagesWithNewTopicAndClean(testStorage, 2);
     }
 
+    /**
+     * @description This test case verifies transfer of Kafka Cluster from and to management by KafkaNodePool, by creating corresponding Kafka and KafkaNodePool custom resources
+     * and manipulating according kafka annotation.
+     *
+     * @steps
+     * 1. - Deploy Kafka with annotated to enable management by KafkaNodePool, and KafkaNodePool targeting given Kafka Cluster.
+     *    - Kafka is deployed, KafkaNodePool custom resource is targeting Kafka Cluster as expected.
+     * 2. - Modify KafkaNodePool by increasing number of Kafka Replicas.
+     *    - Number of Kafka Pods is increased to match specification from KafkaNodePool
+     * 3. - Produce and consume messages in given Kafka Cluster.
+     *    - Clients can produce and consume messages.
+     * 4. - Modify Kafka custom resource annotation strimzi.io/node-pool to disable management by KafkaNodePool.
+     *    - StrimziPodSet is modified, replacing former one, Pods are replaced and specification from KafkaNodePool (i.e., changed replica count) are ignored.
+     * 5. - Produce and consume messages in given Kafka Cluster.
+     *    - Clients can produce and consume messages.
+     * 6. - Modify Kafka custom resource annotation strimzi.io/node-pool to enable management by KafkaNodePool.
+     *    - new StrimziPodSet is created, replacing former one, Pods are replaced and specification from KafkaNodePool (i.e., changed replica count) has priority over Kafka specification.
+     * 7. - Produce and consume messages in given Kafka Cluster.
+     *    - Clients can produce and consume messages.
+     *
+     * @usecase
+     * - kafka-node-pool
+     */
+    @ParallelNamespaceTest
+    void testKafkaManagementTransferToAndFromKafkaNodePool() {
+        final TestStorage testStorage = new TestStorage(ResourceManager.getTestContext());
+        final int originalKafkaReplicaCount = 3;
+        final int nodePoolIncreasedKafkaReplicaCount = 5;
+        final String kafkaNodePoolName = "kafka";
+
+        LOGGER.info("Deploying Kafka Cluster: {}/{} controlled by KafkaNodePool: {}", testStorage.getNamespaceName(), testStorage.getClusterName(), kafkaNodePoolName);
+
+        final Kafka kafkaCr = KafkaTemplates.kafkaPersistentNodePools(testStorage.getNamespaceName(), testStorage.getClusterName(), originalKafkaReplicaCount, 3).build();
+
+        // as the only FG set in the CO is 'KafkaNodePools' (kraft is never included) Broker role is the only one that can be taken
+        resourceManager.createResourceWithWait(
+            KafkaNodePoolTemplates.brokerPoolPersistentStorage(testStorage.getNamespaceName(), kafkaNodePoolName, testStorage.getClusterName(), 3).build(),
+            kafkaCr);
+
+        LOGGER.info("Creating KafkaTopic: {}/{}", testStorage.getNamespaceName(), testStorage.getTopicName());
+        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage).build());
+
+        LOGGER.info("Producing and Consuming messages with clients: {}, {} in Namespace {}", testStorage.getProducerName(), testStorage.getConsumerName(), testStorage.getNamespaceName());
+        final KafkaClients clients = ClientUtils.getInstantPlainClients(testStorage);
+        resourceManager.createResourceWithWait(
+            clients.producerStrimzi(),
+            clients.consumerStrimzi()
+        );
+        ClientUtils.waitForInstantClientSuccess(testStorage);
+
+        // increase number of kafka replicas in KafkaNodePool
+        LOGGER.info("Modifying KafkaNodePool: {}/{} by increasing number of Kafka replicas from '3' to '5'", testStorage.getNamespaceName(), kafkaNodePoolName);
+        KafkaNodePoolResource.replaceKafkaNodePoolResourceInSpecificNamespace(kafkaNodePoolName, kafkaNodePool -> {
+            kafkaNodePool.getSpec().setReplicas(nodePoolIncreasedKafkaReplicaCount);
+        }, testStorage.getNamespaceName());
+
+        StrimziPodSetUtils.waitForAllStrimziPodSetAndPodsReady(
+            testStorage.getNamespaceName(),
+            testStorage.getClusterName(),
+            KafkaResource.getStrimziPodSetName(testStorage.getClusterName(), kafkaNodePoolName),
+            nodePoolIncreasedKafkaReplicaCount
+        );
+
+        LOGGER.info("Producing and Consuming messages with clients: {}, {} in Namespace {}", testStorage.getProducerName(), testStorage.getConsumerName(), testStorage.getNamespaceName());
+        resourceManager.createResourceWithWait(
+            clients.producerStrimzi(),
+            clients.consumerStrimzi()
+        );
+        ClientUtils.waitForInstantClientSuccess(testStorage);
+
+        LOGGER.info("Disable KafkaNodePool in Kafka Cluster: {}/{}", testStorage.getNamespaceName(), testStorage.getClusterName());
+        KafkaResource.replaceKafkaResourceInSpecificNamespace(testStorage.getClusterName(),
+            kafka -> {
+                kafka.getMetadata().getAnnotations().put(Annotations.ANNO_STRIMZI_IO_NODE_POOLS, "disabled");
+                // because Kafka CR with NodePools is missing .spec.kafka.replicas and .spec.kafka.storage, we need to
+                // set those here
+                kafka.getSpec().getKafka().setReplicas(originalKafkaReplicaCount);
+                kafka.getSpec().getKafka().setStorage(new PersistentClaimStorageBuilder()
+                    .withSize("1Gi")
+                    .withDeleteClaim(true)
+                    .build()
+                );
+            }, testStorage.getNamespaceName());
+
+        StrimziPodSetUtils.waitForAllStrimziPodSetAndPodsReady(
+            testStorage.getNamespaceName(),
+            testStorage.getClusterName(),
+            KafkaResource.getStrimziPodSetName(testStorage.getClusterName(), kafkaNodePoolName),
+            originalKafkaReplicaCount
+        );
+        PodUtils.waitUntilPodStabilityReplicasCount(testStorage.getNamespaceName(), KafkaResources.kafkaComponentName(testStorage.getClusterName()), originalKafkaReplicaCount);
+
+        LOGGER.info("Producing and Consuming messages with clients: {}, {} in Namespace {}", testStorage.getProducerName(), testStorage.getConsumerName(), testStorage.getNamespaceName());
+        resourceManager.createResourceWithWait(
+            clients.producerStrimzi(),
+            clients.consumerStrimzi()
+        );
+        ClientUtils.waitForInstantClientSuccess(testStorage);
+
+        LOGGER.info("Enable KafkaNodePool in Kafka Cluster: {}/{}", testStorage.getNamespaceName(), testStorage.getClusterName());
+        KafkaResource.replaceKafkaResourceInSpecificNamespace(testStorage.getClusterName(),
+            kafka -> {
+                kafka.getMetadata().getAnnotations().put(Annotations.ANNO_STRIMZI_IO_NODE_POOLS, "enabled");
+                kafka.getSpec().getKafka().setReplicas(null);
+                kafka.getSpec().getKafka().setStorage(null);
+            }, testStorage.getNamespaceName());
+
+        StrimziPodSetUtils.waitForAllStrimziPodSetAndPodsReady(
+            testStorage.getNamespaceName(),
+            testStorage.getClusterName(),
+            KafkaResource.getStrimziPodSetName(testStorage.getClusterName(), kafkaNodePoolName),
+            nodePoolIncreasedKafkaReplicaCount
+        );
+        PodUtils.waitUntilPodStabilityReplicasCount(testStorage.getNamespaceName(), KafkaResources.kafkaComponentName(testStorage.getClusterName()), nodePoolIncreasedKafkaReplicaCount);
+
+        LOGGER.info("Producing and Consuming messages with clients: {}, {} in Namespace {}", testStorage.getProducerName(), testStorage.getConsumerName(), testStorage.getNamespaceName());
+        resourceManager.createResourceWithWait(
+            clients.producerStrimzi(),
+            clients.consumerStrimzi()
+        );
+        ClientUtils.waitForInstantClientSuccess(testStorage);
+    }
+
     private void transmitMessagesWithNewTopicAndClean(TestStorage testStorage, int topicReplicas) {
         final String topicName = testStorage.getTopicName() + "-replicas-" + topicReplicas + "-" + hashStub(String.valueOf(new Random().nextInt(Integer.MAX_VALUE)));
-        final KafkaTopic kafkaTopic = KafkaTopicTemplates.topic(testStorage.getClusterName(), topicName, 1, topicReplicas, testStorage.getNamespaceName()).build();
+        final KafkaTopic kafkaTopic = KafkaTopicTemplates.topic(testStorage.getNamespaceName(), topicName, testStorage.getClusterName(), 1, topicReplicas).build();
         resourceManager.createResourceWithWait(kafkaTopic);
 
         LOGGER.info("Transmit messages with Kafka {}/{} using topic {}", testStorage.getNamespaceName(), testStorage.getClusterName(), topicName);

@@ -36,7 +36,6 @@ import io.strimzi.systemtest.utils.specific.TracingUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
@@ -75,14 +74,10 @@ public class OpenTelemetryST extends AbstractST {
 
     private final Tracing otelTracing = new OpenTelemetryTracing();
 
-    @ParallelNamespaceTest
     @Tag(ACCEPTANCE)
+    @ParallelNamespaceTest
     void testProducerConsumerStreamsService() {
-        // Current implementation of Jaeger deployment and test parallelism does not allow to run this test with STRIMZI_RBAC_SCOPE=NAMESPACE`
-        assumeFalse(Environment.isNamespaceRbacScope());
-
-        // This testStorage gets resources set by BeforeEach, so it must be retrieved from storageMap
-        final TestStorage testStorage = storageMap.get(ResourceManager.getTestContext());
+        final TestStorage testStorage = deployInitialResourcesAndGetTestStorage();
 
         resourceManager.createResourceWithWait(
             NodePoolsConverter.convertNodePoolsIfNeeded(
@@ -90,11 +85,11 @@ public class OpenTelemetryST extends AbstractST {
                 KafkaNodePoolTemplates.controllerPool(testStorage.getNamespaceName(), testStorage.getControllerPoolName(), testStorage.getClusterName(), 1).build()
             )
         );
-        resourceManager.createResourceWithWait(KafkaTemplates.kafkaEphemeral(testStorage.getClusterName(), 3, 1).build());
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaEphemeral(testStorage.getNamespaceName(), testStorage.getClusterName(), 3, 1).build());
 
-        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getClusterName(), testStorage.getTopicName(), 12, 3, testStorage.getNamespaceName()).build());
+        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getNamespaceName(), testStorage.getTopicName(), testStorage.getClusterName(), 12, 3).build());
 
-        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getClusterName(), testStorage.getStreamsTopicTargetName(), 12, 3, testStorage.getNamespaceName()).build());
+        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getNamespaceName(), testStorage.getStreamsTopicTargetName(), testStorage.getClusterName(), 12, 3).build());
 
         resourceManager.createResourceWithWait((testStorage.getTracingClients()).producerWithTracing());
 
@@ -121,11 +116,7 @@ public class OpenTelemetryST extends AbstractST {
     @ParallelNamespaceTest
     @Tag(MIRROR_MAKER2)
     void testProducerConsumerMirrorMaker2Service() {
-        // Current implementation of Jaeger deployment and test parallelism does not allow to run this test with STRIMZI_RBAC_SCOPE=NAMESPACE`
-        assumeFalse(Environment.isNamespaceRbacScope());
-
-        // This testStorage gets resources set by BeforeEach, so it must be retrieved from storageMap
-        final TestStorage testStorage = storageMap.get(ResourceManager.getTestContext());
+        final TestStorage testStorage = deployInitialResourcesAndGetTestStorage();
 
         resourceManager.createResourceWithWait(
             NodePoolsConverter.convertNodePoolsIfNeeded(
@@ -133,7 +124,7 @@ public class OpenTelemetryST extends AbstractST {
                 KafkaNodePoolTemplates.controllerPool(testStorage.getNamespaceName(), testStorage.getSourceControllerPoolName(), testStorage.getSourceClusterName(), 1).build()
             )
         );
-        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getSourceClusterName(), 1).build());
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getNamespaceName(), testStorage.getSourceClusterName(), 1).build());
 
         resourceManager.createResourceWithWait(
             NodePoolsConverter.convertNodePoolsIfNeeded(
@@ -141,12 +132,12 @@ public class OpenTelemetryST extends AbstractST {
                 KafkaNodePoolTemplates.controllerPool(testStorage.getNamespaceName(), testStorage.getTargetControllerPoolName(), testStorage.getTargetClusterName(), 1).build()
             )
         );
-        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getTargetClusterName(), 1).build());
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getNamespaceName(), testStorage.getTargetClusterName(), 1).build());
 
         // Create topic and deploy clients before Mirror Maker to not wait for MM to find the new topics
-        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getSourceClusterName(), testStorage.getTopicName(), 12, 3, testStorage.getNamespaceName()).build());
+        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getNamespaceName(), testStorage.getTopicName(), testStorage.getSourceClusterName(), 12, 3).build());
 
-        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getTargetClusterName(), testStorage.getMirroredSourceTopicName(), 12, 3, testStorage.getNamespaceName()).build());
+        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getNamespaceName(), testStorage.getMirroredSourceTopicName(), testStorage.getTargetClusterName(), 12, 3).build());
 
         LOGGER.info("Setting for Kafka source plain bootstrap: {}", KafkaResources.plainBootstrapAddress(testStorage.getSourceClusterName()));
 
@@ -166,7 +157,7 @@ public class OpenTelemetryST extends AbstractST {
 
         resourceManager.createResourceWithWait(targetKafkaTracingClient.consumerWithTracing());
 
-        resourceManager.createResourceWithWait(KafkaMirrorMaker2Templates.kafkaMirrorMaker2(testStorage.getClusterName(), testStorage.getTargetClusterName(), testStorage.getSourceClusterName(), 1, false)
+        resourceManager.createResourceWithWait(KafkaMirrorMaker2Templates.kafkaMirrorMaker2(testStorage.getNamespaceName(), testStorage.getClusterName(), testStorage.getSourceClusterName(), testStorage.getTargetClusterName(), 1, false)
             .editSpec()
                 .withTracing(otelTracing)
                 .withNewTemplate()
@@ -204,11 +195,7 @@ public class OpenTelemetryST extends AbstractST {
     @ParallelNamespaceTest
     @Tag(MIRROR_MAKER)
     void testProducerConsumerMirrorMakerService() {
-        // Current implementation of Jaeger deployment and test parallelism does not allow to run this test with STRIMZI_RBAC_SCOPE=NAMESPACE`
-        assumeFalse(Environment.isNamespaceRbacScope());
-
-        // This testStorage gets resources set by BeforeEach, so it must be retrieved from storageMap
-        final TestStorage testStorage = storageMap.get(ResourceManager.getTestContext());
+        final TestStorage testStorage = deployInitialResourcesAndGetTestStorage();
 
         resourceManager.createResourceWithWait(
             NodePoolsConverter.convertNodePoolsIfNeeded(
@@ -216,7 +203,7 @@ public class OpenTelemetryST extends AbstractST {
                 KafkaNodePoolTemplates.controllerPool(testStorage.getNamespaceName(), testStorage.getSourceControllerPoolName(), testStorage.getSourceClusterName(), 1).build()
             )
         );
-        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getSourceClusterName(), 1).build());
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getNamespaceName(), testStorage.getSourceClusterName(), 1).build());
 
         resourceManager.createResourceWithWait(
             NodePoolsConverter.convertNodePoolsIfNeeded(
@@ -224,11 +211,11 @@ public class OpenTelemetryST extends AbstractST {
                 KafkaNodePoolTemplates.controllerPool(testStorage.getNamespaceName(), testStorage.getTargetControllerPoolName(), testStorage.getTargetClusterName(), 1).build()
             )
         );
-        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getTargetClusterName(), 1).build());
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getNamespaceName(), testStorage.getTargetClusterName(), 1).build());
 
         // Create topic and deploy clients before Mirror Maker to not wait for MM to find the new topics
-        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getSourceClusterName(), testStorage.getTopicName(), 12, 3, testStorage.getNamespaceName()).build());
-        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getTargetClusterName(), testStorage.getTargetTopicName(), 12, 3, testStorage.getTopicName()).build());
+        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getNamespaceName(), testStorage.getTopicName(), testStorage.getSourceClusterName(), 12, 3).build());
+        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getNamespaceName(), testStorage.getTargetTopicName(), testStorage.getTargetClusterName(), 12, 3).build());
 
         LOGGER.info("Setting for Kafka source plain bootstrap: {}", KafkaResources.plainBootstrapAddress(testStorage.getSourceClusterName()));
 
@@ -247,7 +234,7 @@ public class OpenTelemetryST extends AbstractST {
 
         resourceManager.createResourceWithWait(targetKafkaTracingClient.consumerWithTracing());
 
-        resourceManager.createResourceWithWait(KafkaMirrorMakerTemplates.kafkaMirrorMaker(testStorage.getClusterName(), testStorage.getSourceClusterName(), testStorage.getTargetClusterName(),
+        resourceManager.createResourceWithWait(KafkaMirrorMakerTemplates.kafkaMirrorMaker(testStorage.getNamespaceName(), testStorage.getClusterName(), testStorage.getSourceClusterName(), testStorage.getTargetClusterName(),
                 ClientUtils.generateRandomConsumerGroup(), 1, false)
             .editSpec()
                 .withTracing(otelTracing)
@@ -277,11 +264,7 @@ public class OpenTelemetryST extends AbstractST {
     @Tag(CONNECT_COMPONENTS)
     @SuppressWarnings({"checkstyle:MethodLength"})
     void testProducerConsumerStreamsConnectService() {
-        // Current implementation of Jaeger deployment and test parallelism does not allow to run this test with STRIMZI_RBAC_SCOPE=NAMESPACE`
-        assumeFalse(Environment.isNamespaceRbacScope());
-
-        // This testStorage gets resources set by BeforeEach, so it must be retrieved from storageMap
-        final TestStorage testStorage = storageMap.get(ResourceManager.getTestContext());
+        final TestStorage testStorage = deployInitialResourcesAndGetTestStorage();
 
         resourceManager.createResourceWithWait(
             NodePoolsConverter.convertNodePoolsIfNeeded(
@@ -289,11 +272,11 @@ public class OpenTelemetryST extends AbstractST {
                 KafkaNodePoolTemplates.controllerPool(testStorage.getNamespaceName(), testStorage.getControllerPoolName(), testStorage.getClusterName(), 1).build()
             )
         );
-        resourceManager.createResourceWithWait(KafkaTemplates.kafkaEphemeral(testStorage.getClusterName(), 3, 1).build());
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaEphemeral(testStorage.getNamespaceName(), testStorage.getClusterName(), 3, 1).build());
 
         // Create topic and deploy clients before MirrorMaker to not wait for MM to find the new topics
-        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getClusterName(), testStorage.getTopicName(), 12, 3, testStorage.getNamespaceName()).build());
-        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getClusterName(), testStorage.getStreamsTopicTargetName(), 12, 3, testStorage.getNamespaceName()).build());
+        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getNamespaceName(), testStorage.getTopicName(), testStorage.getClusterName(), 12, 3).build());
+        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getNamespaceName(), testStorage.getStreamsTopicTargetName(), testStorage.getClusterName(), 12, 3).build());
 
         final Map<String, Object> configOfKafkaConnect = new HashMap<>();
         configOfKafkaConnect.put("config.storage.replication.factor", "-1");
@@ -304,7 +287,7 @@ public class OpenTelemetryST extends AbstractST {
         configOfKafkaConnect.put("key.converter.schemas.enable", "false");
         configOfKafkaConnect.put("value.converter.schemas.enable", "false");
 
-        KafkaConnectBuilder connectBuilder = KafkaConnectTemplates.kafkaConnect(testStorage.getClusterName(), Environment.TEST_SUITE_NAMESPACE, 1)
+        KafkaConnectBuilder connectBuilder = KafkaConnectTemplates.kafkaConnect(Environment.TEST_SUITE_NAMESPACE, testStorage.getClusterName(), 1)
             .editMetadata()
                 .addToAnnotations(Annotations.STRIMZI_IO_USE_CONNECTOR_RESOURCES, "true")
             .endMetadata()
@@ -329,7 +312,7 @@ public class OpenTelemetryST extends AbstractST {
 
         resourceManager.createResourceWithWait(KafkaConnectTemplates.addFileSinkPluginOrImage(testStorage.getNamespaceName(), connectBuilder).build());
 
-        resourceManager.createResourceWithWait(KafkaConnectorTemplates.kafkaConnector(testStorage.getClusterName())
+        resourceManager.createResourceWithWait(KafkaConnectorTemplates.kafkaConnector(testStorage.getNamespaceName(), testStorage.getClusterName())
             .editSpec()
                 .withClassName("org.apache.kafka.connect.file.FileStreamSinkConnector")
                 .addToConfig("file", TestConstants.DEFAULT_SINK_FILE_PATH)
@@ -359,8 +342,7 @@ public class OpenTelemetryST extends AbstractST {
     @Tag(BRIDGE)
     @ParallelNamespaceTest
     void testKafkaBridgeService() {
-        // This testStorage gets resources set by BeforeEach, so it must be retrieved from storageMap
-        final TestStorage testStorage = storageMap.get(ResourceManager.getTestContext());
+        final TestStorage testStorage = deployInitialResourcesAndGetTestStorage();
 
         resourceManager.createResourceWithWait(
             NodePoolsConverter.convertNodePoolsIfNeeded(
@@ -368,16 +350,9 @@ public class OpenTelemetryST extends AbstractST {
                 KafkaNodePoolTemplates.controllerPool(testStorage.getNamespaceName(), testStorage.getControllerPoolName(), testStorage.getClusterName(), 1).build()
             )
         );
-        resourceManager.createResourceWithWait(KafkaTemplates.kafkaEphemeral(testStorage.getClusterName(), 3, 1)
-            .editMetadata()
-                .withNamespace(testStorage.getNamespaceName())
-            .endMetadata()
-            .build());
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaEphemeral(testStorage.getNamespaceName(), testStorage.getClusterName(), 3, 1).build());
         // Deploy http bridge
-        resourceManager.createResourceWithWait(KafkaBridgeTemplates.kafkaBridge(testStorage.getClusterName(), KafkaResources.plainBootstrapAddress(testStorage.getClusterName()), 1)
-            .editMetadata()
-                .withNamespace(testStorage.getNamespaceName())
-            .endMetadata()
+        resourceManager.createResourceWithWait(KafkaBridgeTemplates.kafkaBridge(testStorage.getNamespaceName(), testStorage.getClusterName(), KafkaResources.plainBootstrapAddress(testStorage.getClusterName()), 1)
             .editSpec()
                 .withTracing(otelTracing)
                 .withNewTemplate()
@@ -400,7 +375,7 @@ public class OpenTelemetryST extends AbstractST {
             .build());
 
         final String bridgeProducer = "bridge-producer";
-        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getClusterName(), testStorage.getTopicName(), testStorage.getNamespaceName()).build());
+        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getNamespaceName(), testStorage.getTopicName(), testStorage.getClusterName()).build());
 
         final BridgeTracingClients kafkaBridgeClientJob = new BridgeTracingClientsBuilder()
             .withTracingServiceNameEnvVar(TracingConstants.OTEL_SERVICE_ENV)
@@ -425,8 +400,7 @@ public class OpenTelemetryST extends AbstractST {
     @Tag(BRIDGE)
     @ParallelNamespaceTest
     void testKafkaBridgeServiceWithHttpTracing() {
-        // This testStorage gets resources set by BeforeEach, so it must be retrieved from storageMap
-        final TestStorage testStorage = storageMap.get(ResourceManager.getTestContext());
+        final TestStorage testStorage = deployInitialResourcesAndGetTestStorage();
 
         resourceManager.createResourceWithWait(
             NodePoolsConverter.convertNodePoolsIfNeeded(
@@ -434,16 +408,9 @@ public class OpenTelemetryST extends AbstractST {
                 KafkaNodePoolTemplates.controllerPool(testStorage.getNamespaceName(), testStorage.getControllerPoolName(), testStorage.getClusterName(), 1).build()
             )
         );
-        resourceManager.createResourceWithWait(KafkaTemplates.kafkaEphemeral(testStorage.getClusterName(), 3, 1)
-            .editMetadata()
-                .withNamespace(testStorage.getNamespaceName())
-            .endMetadata()
-            .build());
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaEphemeral(testStorage.getNamespaceName(), testStorage.getClusterName(), 3, 1).build());
         // Deploy http bridge
-        resourceManager.createResourceWithWait(KafkaBridgeTemplates.kafkaBridge(testStorage.getClusterName(), KafkaResources.plainBootstrapAddress(testStorage.getClusterName()), 1)
-            .editMetadata()
-                .withNamespace(testStorage.getNamespaceName())
-            .endMetadata()
+        resourceManager.createResourceWithWait(KafkaBridgeTemplates.kafkaBridge(testStorage.getNamespaceName(), testStorage.getClusterName(), KafkaResources.plainBootstrapAddress(testStorage.getClusterName()), 1)
             .editSpec()
                 .withTracing(otelTracing)
                 .withNewTemplate()
@@ -489,8 +456,7 @@ public class OpenTelemetryST extends AbstractST {
         TracingUtils.verify(testStorage.getNamespaceName(), bridgeProducer, testStorage.getScraperPodName(), JAEGER_QUERY_SERVICE);
     }
 
-    @BeforeEach
-    void createTestResources() {
+    private TestStorage deployInitialResourcesAndGetTestStorage() {
         final TestStorage testStorage = new TestStorage(ResourceManager.getTestContext());
 
         SetupJaeger.deployJaegerInstance(testStorage.getNamespaceName());
@@ -517,11 +483,13 @@ public class OpenTelemetryST extends AbstractST {
 
         testStorage.addToTestStorage(TestConstants.KAFKA_TRACING_CLIENT_KEY, kafkaTracingClients);
 
-        storageMap.put(ResourceManager.getTestContext(), testStorage);
+        return testStorage;
     }
 
     @BeforeAll
     void setup() {
+        assumeFalse(Environment.isNamespaceRbacScope());
+
         this.clusterOperator = this.clusterOperator
             .defaultInstallation()
             .createInstallation()

@@ -11,24 +11,15 @@ Update the `spec` properties of the `KafkaConnect` custom resource to configure 
 Use Kafka Connect to set up external data connections to your Kafka cluster.
 Use the properties of the `KafkaConnect` resource to configure your Kafka Connect deployment.
 
+You can also use the `KafkaConnect` resource to specify the following:
+
+* Connector plugin configuration to build a container image that includes the plugins to make connections
+* Configuration for the Kafka Connect worker pods that run connectors
+* An annotation to enable use of the `KafkaConnector` resource to manage connectors
+
+The Cluster Operator manages Kafka Connect clusters deployed using the `KafkaConnect` resource and connectors created using the `KafkaConnector` resource.
+
 For a deeper understanding of the Kafka Connect cluster configuration options, refer to the link:{BookURLConfiguring}[Strimzi Custom Resource API Reference^].
-
-.KafkaConnector configuration
-`KafkaConnector` resources allow you to create and manage connector instances for Kafka Connect in a Kubernetes-native way.
-
-In your Kafka Connect configuration, you enable KafkaConnectors for a Kafka Connect cluster by adding the `strimzi.io/use-connector-resources` annotation.
-You can also add a `build` configuration so that Strimzi automatically builds a container image with the connector plugins you require for your data connections.
-External configuration for Kafka Connect connectors is specified through the `externalConfiguration` property.
-
-To manage connectors, you can use use `KafkaConnector` custom resources or the Kafka Connect REST API.
-`KafkaConnector` resources must be deployed to the same namespace as the Kafka Connect cluster they link to.
-For more information on using these methods to create, reconfigure, or delete connectors, see xref:using-kafka-connect-with-plug-ins-{context}[Adding connectors].
-
-Connector configuration is passed to Kafka Connect as part of an HTTP request and stored within Kafka itself.
-ConfigMaps and Secrets are standard Kubernetes resources used for storing configurations and confidential data.
-You can use ConfigMaps and Secrets to configure certain elements of a connector.
-You can then reference the configuration values in HTTP REST commands, which keeps the configuration separate and more secure, if needed.
-This method applies especially to confidential data, such as usernames, passwords, or certificates.
 
 .Handling high volumes of messages
 You can tune the configuration to handle high volumes of messages.
@@ -37,27 +28,34 @@ For more information, see xref:con-high-volume-config-properties-{context}[Handl
 .Example `KafkaConnect` custom resource configuration
 [source,yaml,subs=attributes+,options="nowrap"]
 ----
+# Basic configuration (required)
 apiVersion: {KafkaConnectApiVersion}
 kind: KafkaConnect # <1>
 metadata:
   name: my-connect-cluster
   annotations:
     strimzi.io/use-connector-resources: "true" # <2>
+# Deployment specifications
 spec:
+  # Replicas (required)
   replicas: 3 # <3>
+  # Authentication (optional)
   authentication: # <4>
     type: tls
     certificateAndKey:
       certificate: source.crt
       key: source.key
       secretName: my-user-source
+  # Bootstrap servers (required)
   bootstrapServers: my-cluster-kafka-bootstrap:9092 # <5>
+  # TLS configuration (optional)
   tls: # <6>
     trustedCertificates:
       - secretName: my-cluster-cluster-cert
         pattern: "*.crt"
       - secretName: my-cluster-cluster-cert
         pattern: "*.crt"
+  # Kafka Connect configuration (recommended)
   config: # <7>
     group.id: my-connect-cluster
     offset.storage.topic: my-connect-cluster-offsets
@@ -70,6 +68,7 @@ spec:
     config.storage.replication.factor: 3
     offset.storage.replication.factor: 3
     status.storage.replication.factor: 3
+  # Build configuration (optional)
   build: # <8>
     output: # <9>
       type: docker
@@ -86,6 +85,7 @@ spec:
           - type: jar
             url: <url_to_download_connector_2_artifact>
             sha512sum: <SHA-512_checksum_of_connector_2_artifact>
+  # External configuration (optional)
   externalConfiguration: # <11>
     env:
       - name: AWS_ACCESS_KEY_ID
@@ -98,6 +98,7 @@ spec:
           secretKeyRef:
             name: aws-creds
             key: awsSecretAccessKey
+  # Resources requests and limits (recommended)
   resources: # <12>
     requests:
       cpu: "1"
@@ -105,28 +106,36 @@ spec:
     limits:
       cpu: "2"
       memory: 2Gi
+  # Logging configuration (optional)
   logging: # <13>
     type: inline
     loggers:
       log4j.rootLogger: INFO
+  # Readiness probe (optional)
   readinessProbe: # <14>
     initialDelaySeconds: 15
     timeoutSeconds: 5
+  # Liveness probe (optional)
   livenessProbe:
     initialDelaySeconds: 15
     timeoutSeconds: 5
+  # Metrics configuration (optional)
   metricsConfig: # <15>
     type: jmxPrometheusExporter
     valueFrom:
       configMapKeyRef:
         name: my-config-map
         key: my-key
+  # JVM options (optional)
   jvmOptions: # <16>
     "-Xmx": "1g"
     "-Xms": "1g"
+  # Custom image (optional)
   image: my-org/my-image:latest # <17>
+  # Rack awareness (optional)
   rack:
     topologyKey: topology.kubernetes.io/zone # <18>
+  # Pod template (optional)
   template: # <19>
     pod:
       affinity:
@@ -146,18 +155,22 @@ spec:
           value: my-otel-service
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
           value: "http://otlp-host:4317"
+  # Tracing configuration (optional)
   tracing:
     type: opentelemetry # <21>
 ----
 <1> Use `KafkaConnect`.
-<2> Enables KafkaConnectors for the Kafka Connect cluster.
+<2> Enables the use of `KafkaConnector` resources to start, stop, and manage connector instances.
 <3> The number of replica nodes for the workers that run tasks.
 <4> Authentication for the Kafka Connect cluster, specified as mTLS, token-based OAuth, SASL-based SCRAM-SHA-256/SCRAM-SHA-512, or PLAIN.
 By default, Kafka Connect connects to Kafka brokers using a plain text connection.
-<5> Bootstrap server for connection to the Kafka cluster.
+<5> Bootstrap address for connection to the Kafka cluster. The address takes the format `<cluster_name>-kafka-bootstrap:<port_number>`. The Kafka cluster doesn't need to be managed by Strimzi or deployed to a Kubernetes cluster.
 <6> TLS configuration for encrypted connections to the Kafka cluster, with trusted certificates stored in X.509 format within the specified secrets.
-<7> Kafka Connect configuration of workers (not connectors).
+<7> Kafka Connect configuration of workers (not connectors) that run connectors and their tasks.
 Standard Apache Kafka configuration may be provided, restricted to those properties not managed directly by Strimzi.
+In this example, JSON convertors are specified. 
+A replication factor of 3 is set for the internal topics used by Kafka Connect (minimum requirement for production environment). 
+Changing the replication factor after the topics have been created has no effect.
 <8> Build configuration properties for building a container image with connector plugins automatically.
 <9> (Required) Configuration of the container registry where new images are pushed.
 <10> (Required) List of connector plugins and their artifacts to add to the new container image. Each plugin must be configured with at least one `artifact`.

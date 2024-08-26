@@ -6,18 +6,23 @@ package io.strimzi.operator.cluster.operator.assembly;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.SecretKeySelectorBuilder;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
+import io.strimzi.api.kafka.model.kafka.JbodStorageBuilder;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.KafkaResources;
+import io.strimzi.api.kafka.model.kafka.PersistentClaimStorageBuilder;
+import io.strimzi.api.kafka.model.kafka.Storage;
 import io.strimzi.api.kafka.model.kafka.cruisecontrol.BrokerCapacityBuilder;
 import io.strimzi.api.kafka.model.kafka.cruisecontrol.CruiseControlResources;
-import io.strimzi.api.kafka.model.kafka.cruisecontrol.CruiseControlSpec;
-import io.strimzi.api.kafka.model.kafka.cruisecontrol.CruiseControlSpecBuilder;
+import io.strimzi.api.kafka.model.kafka.cruisecontrol.HashLoginServiceApiUsersBuilder;
 import io.strimzi.api.kafka.model.kafka.entityoperator.EntityOperatorSpecBuilder;
+import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerBuilder;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 import io.strimzi.operator.cluster.KafkaVersionTestUtils;
 import io.strimzi.operator.cluster.ResourceUtils;
 import io.strimzi.operator.cluster.model.AbstractModel;
@@ -46,16 +51,16 @@ import io.vertx.junit5.VertxTestContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Clock;
 import java.util.Map;
 import java.util.Set;
 
-import static io.strimzi.operator.common.model.cruisecontrol.CruiseControlApiProperties.API_TO_ADMIN_NAME;
-import static io.strimzi.operator.common.model.cruisecontrol.CruiseControlApiProperties.API_TO_ADMIN_NAME_KEY;
-import static io.strimzi.operator.common.model.cruisecontrol.CruiseControlApiProperties.API_TO_ADMIN_PASSWORD_KEY;
+import static io.strimzi.operator.common.model.cruisecontrol.CruiseControlApiProperties.TOPIC_OPERATOR_PASSWORD_KEY;
+import static io.strimzi.operator.common.model.cruisecontrol.CruiseControlApiProperties.TOPIC_OPERATOR_USERNAME;
+import static io.strimzi.operator.common.model.cruisecontrol.CruiseControlApiProperties.TOPIC_OPERATOR_USERNAME_KEY;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -71,20 +76,51 @@ import static org.mockito.Mockito.when;
 public class CruiseControlReconcilerTest {
     private static final String NAMESPACE = "namespace";
     private static final String NAME = "name";
+    private static final Kafka KAFKA = new KafkaBuilder()
+                .withNewMetadata()
+                    .withName(NAME)
+                    .withNamespace(NAMESPACE)
+                    .withAnnotations(Map.of(Annotations.ANNO_STRIMZI_IO_NODE_POOLS, "enabled", Annotations.ANNO_STRIMZI_IO_KRAFT, "enabled"))
+                .endMetadata()
+                .withNewSpec()
+                    .withNewKafka()
+                        .withListeners(new GenericKafkaListenerBuilder()
+                                .withName("plain")
+                                .withPort(9092)
+                                .withType(KafkaListenerType.INTERNAL)
+                                .withTls(false)
+                                .build())
+                    .endKafka()
+                .endSpec()
+                .build();
+    private static final Storage STORAGE = new JbodStorageBuilder().withVolumes(new PersistentClaimStorageBuilder().withId(0).withSize("100Gi").build()).build();
     private static final KafkaVersion.Lookup VERSIONS = KafkaVersionTestUtils.getKafkaVersionLookup();
     private final static Set<NodeRef> NODES = Set.of(
-            new NodeRef(NAME + "kafka-0", 0, "kafka", false, true),
-            new NodeRef(NAME + "kafka-1", 1, "kafka", false, true),
-            new NodeRef(NAME + "kafka-2", 2, "kafka", false, true));
-    private final CruiseControlSpec cruiseControlSpec = new CruiseControlSpecBuilder()
-            .withBrokerCapacity(new BrokerCapacityBuilder().withInboundNetwork("10000KB/s").withOutboundNetwork("10000KB/s").build())
-            .withConfig(Map.of("hard.goals", "com.linkedin.kafka.cruisecontrol.analyzer.goals.NetworkInboundCapacityGoal,com.linkedin.kafka.cruisecontrol.analyzer.goals.NetworkOutboundCapacityGoal",
-                    CruiseControlConfigurationParameters.SAMPLE_STORE_TOPIC_REPLICATION_FACTOR.getValue(), "3"))
-            .build();
+            new NodeRef(NAME + "-mixed-0", 0, "mixed", true, true),
+            new NodeRef(NAME + "-mixed-1", 1, "mixed", true, true),
+            new NodeRef(NAME + "-mixed-2", 2, "mixed", true, true));
+    private static final String USER_MANAGED_API_SECRET_NAME = "cc-api-user-secret";
+    private static final String USER_MANAGED_API_SECRET_KEY = "key";
 
+    /**
+     * This parameterized test uses '@CsvSource' to provide combinations of boolean values for the
+     * topicOperatorEnabled and apiUsersEnabled parameters.
+     * The provided combinations are:
+     *   (a) true, true
+     *   (b) true, false
+     *   (c) false, true
+     *   (d) false, false
+     * This test verifies the behavior of the Cruise Control reconciler based on these different combinations of
+     * parameter values.
+     */
     @ParameterizedTest
-    @ValueSource(booleans = { true, false })
-    public void reconcileEnabledCruiseControl(boolean topicOperatorEnabled, VertxTestContext context) {
+    @CsvSource({
+        "true, true",
+        "true, false",
+        "false, true",
+        "false, false"
+    })
+    public void reconcileEnabledCruiseControl(boolean topicOperatorEnabled, boolean apiUsersEnabled, VertxTestContext context) {
         ResourceOperatorSupplier supplier = ResourceUtils.supplierWithMocks(false);
         DeploymentOperator mockDepOps = supplier.deploymentOperations;
         SecretOperator mockSecretOps = supplier.secretOperations;
@@ -100,10 +136,16 @@ public class CruiseControlReconcilerTest {
         ArgumentCaptor<Secret> secretCaptor = ArgumentCaptor.forClass(Secret.class);
         when(mockSecretOps.reconcile(any(), eq(NAMESPACE), eq(CruiseControlResources.secretName(NAME)), secretCaptor.capture())).thenReturn(Future.succeededFuture());
         when(mockSecretOps.reconcile(any(), eq(NAMESPACE), eq(CruiseControlResources.apiSecretName(NAME)), secretCaptor.capture())).thenReturn(Future.succeededFuture());
-        
+
+        if (apiUsersEnabled) {
+            Secret userManagedApiSecret = mock(Secret.class);
+            doReturn(Map.of(USER_MANAGED_API_SECRET_KEY, Util.encodeToBase64("username0: password0,USER\nusername1: password1,VIEWER"))).when(userManagedApiSecret).getData();
+            when(mockSecretOps.getAsync(eq(NAMESPACE), eq(USER_MANAGED_API_SECRET_NAME))).thenReturn(Future.succeededFuture(userManagedApiSecret));
+        }
+
         if (topicOperatorEnabled) {
             Secret topicOperatorApiSecret = mock(Secret.class);
-            doReturn(Map.of(API_TO_ADMIN_NAME_KEY, Util.encodeToBase64(API_TO_ADMIN_NAME), API_TO_ADMIN_PASSWORD_KEY, Util.encodeToBase64("changeit"))).when(topicOperatorApiSecret).getData();
+            doReturn(Map.of(TOPIC_OPERATOR_USERNAME_KEY, Util.encodeToBase64(TOPIC_OPERATOR_USERNAME), TOPIC_OPERATOR_PASSWORD_KEY, Util.encodeToBase64("changeit"))).when(topicOperatorApiSecret).getData();
             when(mockSecretOps.getAsync(eq(NAMESPACE), eq(KafkaResources.entityTopicOperatorCcApiSecretName(NAME)))).thenReturn(Future.succeededFuture(topicOperatorApiSecret));
         }
 
@@ -121,12 +163,33 @@ public class CruiseControlReconcilerTest {
         when(mockDepOps.waitForObserved(any(), eq(NAMESPACE), eq(CruiseControlResources.componentName(NAME)), anyLong(), anyLong())).thenReturn(Future.succeededFuture());
         when(mockDepOps.readiness(any(), eq(NAMESPACE), eq(CruiseControlResources.componentName(NAME)), anyLong(), anyLong())).thenReturn(Future.succeededFuture());
 
-        Kafka kafka = new KafkaBuilder(ResourceUtils.createKafka(NAMESPACE, NAME, 3, "foo", 120, 30))
+        Kafka kafka = new KafkaBuilder(KAFKA)
                 .editSpec()
-                    .withCruiseControl(cruiseControlSpec)
+                    .withNewCruiseControl()
+                        .withBrokerCapacity(new BrokerCapacityBuilder().withInboundNetwork("10000KB/s").withOutboundNetwork("10000KB/s").build())
+                        .withConfig(
+                                Map.of("hard.goals", "com.linkedin.kafka.cruisecontrol.analyzer.goals.NetworkInboundCapacityGoal,com.linkedin.kafka.cruisecontrol.analyzer.goals.NetworkOutboundCapacityGoal",
+                                        CruiseControlConfigurationParameters.SAMPLE_STORE_TOPIC_REPLICATION_FACTOR.getValue(), "3")
+                        )
+                    .endCruiseControl()
                 .endSpec()
                 .build();
-        
+
+        if (apiUsersEnabled) {
+            kafka.getSpec().getCruiseControl().setApiUsers(
+                new HashLoginServiceApiUsersBuilder()
+                    .withNewValueFrom()
+                        .withSecretKeyRef(
+                            new SecretKeySelectorBuilder()
+                                .withKey(USER_MANAGED_API_SECRET_KEY)
+                                .withName(USER_MANAGED_API_SECRET_NAME)
+                            .build()
+                        )
+                    .endValueFrom()
+                    .build()
+            );
+        }
+
         if (topicOperatorEnabled) {
             kafka.getSpec().setEntityOperator(
                 new EntityOperatorSpecBuilder()
@@ -152,7 +215,7 @@ public class CruiseControlReconcilerTest {
                 kafka,
                 VERSIONS,
                 NODES,
-                Map.of("kafka", kafka.getSpec().getKafka().getStorage()),
+                Map.of("mixed", STORAGE),
                 Map.of(),
                 clusterCa
         );
@@ -181,13 +244,17 @@ public class CruiseControlReconcilerTest {
                     assertThat(deployCaptor.getValue(), is(notNullValue()));
                     assertThat(deployCaptor.getValue().getSpec().getTemplate().getMetadata().getAnnotations().get(Ca.ANNO_STRIMZI_IO_CLUSTER_CA_CERT_GENERATION), is("0"));
                     assertThat(deployCaptor.getValue().getSpec().getTemplate().getMetadata().getAnnotations().get(Ca.ANNO_STRIMZI_IO_CLUSTER_CA_KEY_GENERATION), is("0"));
-                    assertThat(deployCaptor.getAllValues().get(0).getSpec().getTemplate().getMetadata().getAnnotations().get(CruiseControl.ANNO_STRIMZI_SERVER_CONFIGURATION_HASH), is("4b8f68dd"));
-                    assertThat(deployCaptor.getAllValues().get(0).getSpec().getTemplate().getMetadata().getAnnotations().get(CruiseControl.ANNO_STRIMZI_CAPACITY_CONFIGURATION_HASH), is("1eb49220"));
+                    assertThat(deployCaptor.getAllValues().get(0).getSpec().getTemplate().getMetadata().getAnnotations().get(CruiseControl.ANNO_STRIMZI_SERVER_CONFIGURATION_HASH), is("67b9cda0"));
+                    assertThat(deployCaptor.getAllValues().get(0).getSpec().getTemplate().getMetadata().getAnnotations().get(CruiseControl.ANNO_STRIMZI_CAPACITY_CONFIGURATION_HASH), is("3a5e63e7"));
                     assertThat(deployCaptor.getValue().getSpec().getTemplate().getMetadata().getAnnotations().get(Annotations.ANNO_STRIMZI_SERVER_CERT_HASH), is("4d715cdd"));
-                    if (topicOperatorEnabled) {
-                        assertThat(deployCaptor.getAllValues().get(0).getSpec().getTemplate().getMetadata().getAnnotations().get(Annotations.ANNO_STRIMZI_AUTH_HASH), is("bb8cee33"));
+                    if (topicOperatorEnabled && apiUsersEnabled) {
+                        assertThat(deployCaptor.getAllValues().get(0).getSpec().getTemplate().getMetadata().getAnnotations().get(Annotations.ANNO_STRIMZI_AUTH_HASH), is("8c2972b2"));
+                    } else if (topicOperatorEnabled) {
+                        assertThat(deployCaptor.getAllValues().get(0).getSpec().getTemplate().getMetadata().getAnnotations().get(Annotations.ANNO_STRIMZI_AUTH_HASH), is("1b601e9a"));
+                    } else if (apiUsersEnabled) {
+                        assertThat(deployCaptor.getAllValues().get(0).getSpec().getTemplate().getMetadata().getAnnotations().get(Annotations.ANNO_STRIMZI_AUTH_HASH), is("4215f758"));
                     } else {
-                        assertThat(deployCaptor.getAllValues().get(0).getSpec().getTemplate().getMetadata().getAnnotations().get(Annotations.ANNO_STRIMZI_AUTH_HASH), is("27ada64b"));
+                        assertThat(deployCaptor.getAllValues().get(0).getSpec().getTemplate().getMetadata().getAnnotations().get(Annotations.ANNO_STRIMZI_AUTH_HASH), is("5a188d9a"));
                     }
 
                     async.flag();
@@ -225,8 +292,6 @@ public class CruiseControlReconcilerTest {
         when(mockDepOps.waitForObserved(any(), eq(NAMESPACE), eq(CruiseControlResources.componentName(NAME)), anyLong(), anyLong())).thenReturn(Future.succeededFuture());
         when(mockDepOps.readiness(any(), eq(NAMESPACE), eq(CruiseControlResources.componentName(NAME)), anyLong(), anyLong())).thenReturn(Future.succeededFuture());
 
-        Kafka kafka = ResourceUtils.createKafka(NAMESPACE, NAME, 3, "foo", 120, 30);
-
         ClusterCa clusterCa = new ClusterCa(
                 Reconciliation.DUMMY_RECONCILIATION,
                 new MockCertManager(),
@@ -241,10 +306,10 @@ public class CruiseControlReconcilerTest {
                 ResourceUtils.dummyClusterOperatorConfig(),
                 supplier,
                 new PasswordGenerator(16),
-                kafka,
+                KAFKA,
                 VERSIONS,
                 NODES,
-                Map.of(NAME + "-kafka", kafka.getSpec().getKafka().getStorage()),
+                Map.of("mixed", STORAGE),
                 Map.of(),
                 clusterCa
         );

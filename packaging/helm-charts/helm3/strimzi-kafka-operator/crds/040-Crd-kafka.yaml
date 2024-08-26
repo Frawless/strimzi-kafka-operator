@@ -575,7 +575,7 @@ spec:
                               broker:
                                 type: integer
                                 description: Id of the kafka broker (broker identifier).
-                          description: Overrides for individual brokers. The `overrides` field allows to specify a different configuration for different brokers.
+                          description: Overrides for individual brokers. The `overrides` field allows you to specify a different configuration for different brokers.
                         selector:
                           additionalProperties:
                             type: string
@@ -626,7 +626,7 @@ spec:
                                     broker:
                                       type: integer
                                       description: Id of the kafka broker (broker identifier).
-                                description: Overrides for individual brokers. The `overrides` field allows to specify a different configuration for different brokers.
+                                description: Overrides for individual brokers. The `overrides` field allows you to specify a different configuration for different brokers.
                               selector:
                                 additionalProperties:
                                   type: string
@@ -2187,7 +2187,7 @@ spec:
                               broker:
                                 type: integer
                                 description: Id of the kafka broker (broker identifier).
-                          description: Overrides for individual brokers. The `overrides` field allows to specify a different configuration for different brokers.
+                          description: Overrides for individual brokers. The `overrides` field allows you to specify a different configuration for different brokers.
                         selector:
                           additionalProperties:
                             type: string
@@ -5958,6 +5958,32 @@ spec:
                         - type
                         - valueFrom
                       description: Metrics configuration.
+                    apiUsers:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          enum:
+                            - hashLoginService
+                          description: "Type of the Cruise Control API users configuration. Supported format is: `hashLoginService`."
+                        valueFrom:
+                          type: object
+                          properties:
+                            secretKeyRef:
+                              type: object
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              description: Selects a key of a Secret in the resource's namespace.
+                          description: Secret from which the custom Cruise Control API authentication credentials are read.
+                      required:
+                        - type
+                        - valueFrom
+                      description: Configuration of the Cruise Control REST API users.
                   description: Configuration for Cruise Control deployment. Deploys a Cruise Control instance when specified.
                 jmxTrans:
                   type: object
@@ -7710,6 +7736,11 @@ spec:
                         type: string
                         description: The name of the KafkaNodePool used by this Kafka resource.
                   description: List of the KafkaNodePools used by this Kafka cluster.
+                registeredNodeIds:
+                  type: array
+                  items:
+                    type: integer
+                  description: Registered node IDs used by this Kafka cluster. This field is used for internal purposes only and will be removed in the future.
                 clusterId:
                   type: string
                   description: Kafka cluster Id.

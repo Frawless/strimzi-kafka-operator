@@ -99,10 +99,7 @@ public class TieredStorageST extends AbstractST {
             )
         );
 
-        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(testStorage.getClusterName(), 3)
-            .editMetadata()
-                .withNamespace(suiteStorage.getNamespaceName())
-            .endMetadata()
+        resourceManager.createResourceWithWait(KafkaTemplates.kafkaPersistent(suiteStorage.getNamespaceName(), testStorage.getClusterName(), 3)
             .editSpec()
                 .editKafka()
                     .withImage(Environment.getImageOutputRegistry(suiteStorage.getNamespaceName(), IMAGE_NAME, BUILT_IMAGE_TAG))
@@ -122,11 +119,14 @@ public class TieredStorageST extends AbstractST {
                             .addToConfig("storage.aws.secret.access.key", SetupMinio.ADMIN_CREDS)
                         .endRemoteStorageManager()
                     .endTieredStorageCustomTiered()
+                    // reduce the interval to speed up the test
+                    .addToConfig("remote.log.manager.task.interval.ms", 5000)
+                    .addToConfig("log.retention.check.interval.ms", 5000)
                 .endKafka()
             .endSpec()
             .build());
 
-        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(testStorage.getClusterName(), testStorage.getTopicName(), suiteStorage.getNamespaceName())
+        resourceManager.createResourceWithWait(KafkaTopicTemplates.topic(suiteStorage.getNamespaceName(), testStorage.getTopicName(), testStorage.getClusterName())
             .editSpec()
                 .addToConfig("file.delete.delay.ms", 1000)
                 .addToConfig("local.retention.ms", 1000)
@@ -156,18 +156,7 @@ public class TieredStorageST extends AbstractST {
                 testStorage.getNamespaceName(),
                 testStorage.getAdminName(),
                 KafkaResources.plainBootstrapAddress(testStorage.getClusterName())
-            )
-            .editSpec()
-                .editOrNewTemplate()
-                    .editSpec()
-                        .editFirstContainer()
-                            // TODO - remove this when new version of clients will be available
-                            .withImage("quay.io/strimzi-test-clients/test-clients:latest-kafka-" + Environment.ST_KAFKA_VERSION)
-                        .endContainer()
-                    .endSpec()
-                .endTemplate()
-            .endSpec()
-            .build()
+            ).build()
         );
         final AdminClient adminClient = AdminClientUtils.getConfiguredAdminClient(testStorage.getNamespaceName(), testStorage.getAdminName());
 
