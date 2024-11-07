@@ -3,9 +3,6 @@
 # Move to root folder of strimzi
 cd ../../../../
 
-# Prepare files for upgrade
- ./.azure/scripts/setup_upgrade.sh
-
 # Build connect image
 if [[ ${IP_FAMILY} == "ipv4" || ${IP_FAMILY} == "dual" ]]; then
 	DOCKER_REGISTRY=$(hostname --ip-address | grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' | awk '$1 != "127.0.0.1" { print $1 }' | head -1)
@@ -24,6 +21,9 @@ if [[ ${RELEASE:-False} == True ]]; then
 	export DOCKER_ORG="strimzi"
 	export DOCKER_TAG="${PACKIT_TAG_NAME}"
 fi
+
+# Prepare files for upgrade
+ ./.azure/scripts/setup_upgrade.sh
 
 echo "Using container registry '$DOCKER_REGISTRY'"
 echo "Using container org '$DOCKER_ORG'"
