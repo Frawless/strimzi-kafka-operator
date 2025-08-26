@@ -20,7 +20,7 @@ on:
   # Automated trigger for issue comment
   issue_comment:
     types: [created]
-# test 3
+# test 4
 jobs:
   # Parse and build parameters from comment or from workflow params
   parse-params:
