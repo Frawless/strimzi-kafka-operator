@@ -131,6 +131,7 @@ public abstract class AbstractST implements TestSeparator {
         });
 
         KubeResourceManager.get().setStoreYamlPath(Environment.TEST_LOG_DIR);
+        // naser si kurva :D 
     }
 
     // Test-Frame integration stuff, remove everything else when not needed
