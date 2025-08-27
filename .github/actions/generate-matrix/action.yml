@@ -52,7 +52,7 @@ runs:
     - name: Install yq
       uses: ./.github/actions/install-yq
       with:
-        architecture: "arm64"
+        architecture: "amd64"
     - name: Generate Matrix JSON
       id: gen
       shell: bash
