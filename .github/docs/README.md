@@ -138,3 +138,5 @@ Each first-time contributor has to be approved by one of the maintainers which s
 
 Regarding secrets, the forks are not allowed to use secrets by default. 
 Every generated `GITHUB_TOKEN` has only read access to the repo/org without access to the secrets. 
+
+TEST
