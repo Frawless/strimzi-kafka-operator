@@ -1,0 +1,404 @@
+2025-09-01T15:56:30.6665543Z Current runner version: '2.328.0'
+2025-09-01T15:56:30.6698583Z ##[group]Runner Image Provisioner
+2025-09-01T15:56:30.6699758Z Hosted Compute Agent
+2025-09-01T15:56:30.6700817Z Version: 20250821.380
+2025-09-01T15:56:30.6701767Z Commit: 438d12cb4fe092871db9867344e3bc0bc5319035
+2025-09-01T15:56:30.6702989Z Build Date: 2025-08-21T20:49:43Z
+2025-09-01T15:56:30.6703966Z ##[endgroup]
+2025-09-01T15:56:30.6704939Z ##[group]Operating System
+2025-09-01T15:56:30.6705828Z Ubuntu
+2025-09-01T15:56:30.6706774Z 24.04.3
+2025-09-01T15:56:30.6707506Z LTS
+2025-09-01T15:56:30.6708583Z ##[endgroup]
+2025-09-01T15:56:30.6709610Z ##[group]Runner Image
+2025-09-01T15:56:30.6710528Z Image: ubuntu-24.04
+2025-09-01T15:56:30.6711514Z Version: 20250824.1.0
+2025-09-01T15:56:30.6713324Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250824.1/images/ubuntu/Ubuntu2404-Readme.md
+2025-09-01T15:56:30.6716085Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250824.1
+2025-09-01T15:56:30.6717975Z ##[endgroup]
+2025-09-01T15:56:30.6720260Z ##[group]GITHUB_TOKEN Permissions
+2025-09-01T15:56:30.6723547Z Contents: read
+2025-09-01T15:56:30.6724347Z Metadata: read
+2025-09-01T15:56:30.6725265Z PullRequests: write
+2025-09-01T15:56:30.6726248Z Statuses: write
+2025-09-01T15:56:30.6727068Z ##[endgroup]
+2025-09-01T15:56:30.6730556Z Secret source: Actions
+2025-09-01T15:56:30.6732206Z Prepare workflow directory
+2025-09-01T15:56:30.7100845Z Prepare all required actions
+2025-09-01T15:56:30.7155917Z Getting action download info
+2025-09-01T15:56:31.0327847Z Download action repository 'actions/checkout@v5' (SHA:08c6903cd8c0fde910a37f88322edcfb5dd907a8)
+2025-09-01T15:56:31.3644482Z Complete job name: parse-params
+2025-09-01T15:56:31.4388946Z ##[group]Run actions/checkout@v5
+2025-09-01T15:56:31.4389879Z with:
+2025-09-01T15:56:31.4390325Z   repository: Frawless/strimzi-kafka-operator
+2025-09-01T15:56:31.4391071Z   token: ***
+2025-09-01T15:56:31.4391466Z   ssh-strict: true
+2025-09-01T15:56:31.4391868Z   ssh-user: git
+2025-09-01T15:56:31.4392302Z   persist-credentials: true
+2025-09-01T15:56:31.4392769Z   clean: true
+2025-09-01T15:56:31.4393174Z   sparse-checkout-cone-mode: true
+2025-09-01T15:56:31.4393673Z   fetch-depth: 1
+2025-09-01T15:56:31.4394071Z   fetch-tags: false
+2025-09-01T15:56:31.4394468Z   show-progress: true
+2025-09-01T15:56:31.4394877Z   lfs: false
+2025-09-01T15:56:31.4395250Z   submodules: false
+2025-09-01T15:56:31.4395661Z   set-safe-directory: true
+2025-09-01T15:56:31.4396309Z ##[endgroup]
+2025-09-01T15:56:31.5312102Z Syncing repository: Frawless/strimzi-kafka-operator
+2025-09-01T15:56:31.5313864Z ##[group]Getting Git version info
+2025-09-01T15:56:31.5314781Z Working directory is '/home/runner/work/strimzi-kafka-operator/strimzi-kafka-operator'
+2025-09-01T15:56:31.5315928Z [command]/usr/bin/git version
+2025-09-01T15:56:31.5393376Z git version 2.51.0
+2025-09-01T15:56:31.5413768Z ##[endgroup]
+2025-09-01T15:56:31.5427254Z Temporarily overriding HOME='/home/runner/work/_temp/d463f8c4-eae4-4b33-9ef0-e2d91f911993' before making global git config changes
+2025-09-01T15:56:31.5429569Z Adding repository directory to the temporary git global config as a safe directory
+2025-09-01T15:56:31.5432452Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/strimzi-kafka-operator/strimzi-kafka-operator
+2025-09-01T15:56:31.5470589Z Deleting the contents of '/home/runner/work/strimzi-kafka-operator/strimzi-kafka-operator'
+2025-09-01T15:56:31.5474005Z ##[group]Initializing the repository
+2025-09-01T15:56:31.5478764Z [command]/usr/bin/git init /home/runner/work/strimzi-kafka-operator/strimzi-kafka-operator
+2025-09-01T15:56:31.5646530Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-09-01T15:56:31.5647597Z hint: is subject to change. To configure the initial branch name to use in all
+2025-09-01T15:56:31.5648725Z hint: of your new repositories, which will suppress this warning, call:
+2025-09-01T15:56:31.5649397Z hint:
+2025-09-01T15:56:31.5649882Z hint: 	git config --global init.defaultBranch <name>
+2025-09-01T15:56:31.5651132Z hint:
+2025-09-01T15:56:31.5651992Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-09-01T15:56:31.5653369Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-09-01T15:56:31.5654448Z hint:
+2025-09-01T15:56:31.5654844Z hint: 	git branch -m <name>
+2025-09-01T15:56:31.5655556Z hint:
+2025-09-01T15:56:31.5656545Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2025-09-01T15:56:31.5657706Z Initialized empty Git repository in /home/runner/work/strimzi-kafka-operator/strimzi-kafka-operator/.git/
+2025-09-01T15:56:31.5662443Z [command]/usr/bin/git remote add origin https://github.com/Frawless/strimzi-kafka-operator
+2025-09-01T15:56:31.5700914Z ##[endgroup]
+2025-09-01T15:56:31.5701639Z ##[group]Disabling automatic garbage collection
+2025-09-01T15:56:31.5704278Z [command]/usr/bin/git config --local gc.auto 0
+2025-09-01T15:56:31.5732113Z ##[endgroup]
+2025-09-01T15:56:31.5732808Z ##[group]Setting up auth
+2025-09-01T15:56:31.5738493Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-09-01T15:56:31.5768805Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-09-01T15:56:31.6182253Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-09-01T15:56:31.6212051Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-09-01T15:56:31.6439299Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-09-01T15:56:31.6477956Z ##[endgroup]
+2025-09-01T15:56:31.6479386Z ##[group]Fetching the repository
+2025-09-01T15:56:31.6488457Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +da846320e9abadd3a2c7ec36a54157f87200566f:refs/remotes/origin/sts-gha-fixes-v2
+2025-09-01T15:56:32.8749026Z From https://github.com/Frawless/strimzi-kafka-operator
+2025-09-01T15:56:32.8750685Z  * [new ref]         da846320e9abadd3a2c7ec36a54157f87200566f -> origin/sts-gha-fixes-v2
+2025-09-01T15:56:32.8780408Z ##[endgroup]
+2025-09-01T15:56:32.8782172Z ##[group]Determining the checkout info
+2025-09-01T15:56:32.8784134Z ##[endgroup]
+2025-09-01T15:56:32.8788676Z [command]/usr/bin/git sparse-checkout disable
+2025-09-01T15:56:32.8829619Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2025-09-01T15:56:32.8854874Z ##[group]Checking out the ref
+2025-09-01T15:56:32.8858719Z [command]/usr/bin/git checkout --progress --force -B sts-gha-fixes-v2 refs/remotes/origin/sts-gha-fixes-v2
+2025-09-01T15:56:33.0716609Z Switched to a new branch 'sts-gha-fixes-v2'
+2025-09-01T15:56:33.0718822Z branch 'sts-gha-fixes-v2' set up to track 'origin/sts-gha-fixes-v2'.
+2025-09-01T15:56:33.0732711Z ##[endgroup]
+2025-09-01T15:56:33.0771779Z [command]/usr/bin/git log -1 --format=%H
+2025-09-01T15:56:33.0793825Z da846320e9abadd3a2c7ec36a54157f87200566f
+2025-09-01T15:56:33.1047868Z Prepare all required actions
+2025-09-01T15:56:33.1097525Z ##[group]Run ./.github/actions/determine-ref
+2025-09-01T15:56:33.1097878Z ##[endgroup]
+2025-09-01T15:56:33.1212291Z ##[group]Run if [[ "issue_comment" == "pull_request" ]]; then
+2025-09-01T15:56:33.1212812Z [36;1mif [[ "issue_comment" == "pull_request" ]]; then[0m
+2025-09-01T15:56:33.1213226Z [36;1m  # For PR events, use merge ref to test the merged state[0m
+2025-09-01T15:56:33.1213599Z [36;1m  REF="refs/pull//merge"[0m
+2025-09-01T15:56:33.1213870Z [36;1m  SHA=""[0m
+2025-09-01T15:56:33.1214120Z [36;1m  if [[ "$SHA" == "" || "$SHA" == "null" ]]; then[0m
+2025-09-01T15:56:33.1214422Z [36;1m    SHA="HEAD"[0m
+2025-09-01T15:56:33.1214649Z [36;1m  fi[0m
+2025-09-01T15:56:33.1214930Z [36;1m  echo "PR event detected: Using merge ref for PR #"[0m
+2025-09-01T15:56:33.1215661Z [36;1melif [[ "issue_comment" == "issue_comment" ]] && [[ "Object" != "" && "Object" != "null" ]]; then[0m
+2025-09-01T15:56:33.1216200Z [36;1m  # For PR comments, use merge ref to test against merge commit[0m
+2025-09-01T15:56:33.1216561Z [36;1m  REF="refs/pull/10/merge"[0m
+2025-09-01T15:56:33.1216860Z [36;1m  SHA="HEAD"[0m
+2025-09-01T15:56:33.1217181Z [36;1m  echo "PR comment detected: Using merge ref for PR #10"[0m
+2025-09-01T15:56:33.1217520Z [36;1melse[0m
+2025-09-01T15:56:33.1217836Z [36;1m  # For workflow_dispatch and other events, use the current branch[0m
+2025-09-01T15:56:33.1218388Z [36;1m  REF="refs/heads/sts-gha-fixes-v2"[0m
+2025-09-01T15:56:33.1218750Z [36;1m  SHA="da846320e9abadd3a2c7ec36a54157f87200566f"[0m
+2025-09-01T15:56:33.1219115Z [36;1m  echo "Standard event: Using current ref $REF"[0m
+2025-09-01T15:56:33.1219418Z [36;1mfi[0m
+2025-09-01T15:56:33.1219614Z [36;1m[0m
+2025-09-01T15:56:33.1219841Z [36;1mecho "ref=$REF" >> $GITHUB_OUTPUT[0m
+2025-09-01T15:56:33.1220155Z [36;1mecho "sha=$SHA" >> $GITHUB_OUTPUT[0m
+2025-09-01T15:56:33.1220437Z [36;1mecho "REF=$REF" >> $GITHUB_ENV[0m
+2025-09-01T15:56:33.1220728Z [36;1mecho "SHA=$SHA" >> $GITHUB_ENV[0m
+2025-09-01T15:56:33.1220989Z [36;1m[0m
+2025-09-01T15:56:33.1221205Z [36;1mecho "Determined ref: $REF"[0m
+2025-09-01T15:56:33.1221481Z [36;1mecho "Determined SHA: $SHA"[0m
+2025-09-01T15:56:33.1280735Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-09-01T15:56:33.1281134Z ##[endgroup]
+2025-09-01T15:56:33.1350331Z PR comment detected: Using merge ref for PR #10
+2025-09-01T15:56:33.1351640Z Determined ref: refs/pull/10/merge
+2025-09-01T15:56:33.1352148Z Determined SHA: HEAD
+2025-09-01T15:56:33.1484203Z ##[group]Run actions/checkout@v5
+2025-09-01T15:56:33.1484517Z with:
+2025-09-01T15:56:33.1484730Z   ref: refs/pull/10/merge
+2025-09-01T15:56:33.1485016Z   repository: Frawless/strimzi-kafka-operator
+2025-09-01T15:56:33.1485473Z   token: ***
+2025-09-01T15:56:33.1485705Z   ssh-strict: true
+2025-09-01T15:56:33.1485929Z   ssh-user: git
+2025-09-01T15:56:33.1486149Z   persist-credentials: true
+2025-09-01T15:56:33.1486397Z   clean: true
+2025-09-01T15:56:33.1486621Z   sparse-checkout-cone-mode: true
+2025-09-01T15:56:33.1486890Z   fetch-depth: 1
+2025-09-01T15:56:33.1487102Z   fetch-tags: false
+2025-09-01T15:56:33.1487318Z   show-progress: true
+2025-09-01T15:56:33.1487542Z   lfs: false
+2025-09-01T15:56:33.1487738Z   submodules: false
+2025-09-01T15:56:33.1487964Z   set-safe-directory: true
+2025-09-01T15:56:33.1488470Z env:
+2025-09-01T15:56:33.1488681Z   REF: refs/pull/10/merge
+2025-09-01T15:56:33.1488911Z   SHA: HEAD
+2025-09-01T15:56:33.1489107Z ##[endgroup]
+2025-09-01T15:56:33.2244645Z Syncing repository: Frawless/strimzi-kafka-operator
+2025-09-01T15:56:33.2248380Z ##[group]Getting Git version info
+2025-09-01T15:56:33.2249353Z Working directory is '/home/runner/work/strimzi-kafka-operator/strimzi-kafka-operator'
+2025-09-01T15:56:33.2283235Z [command]/usr/bin/git version
+2025-09-01T15:56:33.2317576Z git version 2.51.0
+2025-09-01T15:56:33.2338399Z ##[endgroup]
+2025-09-01T15:56:33.2351497Z Temporarily overriding HOME='/home/runner/work/_temp/092a5cd8-b16e-4b7b-becb-437f12ba4525' before making global git config changes
+2025-09-01T15:56:33.2352864Z Adding repository directory to the temporary git global config as a safe directory
+2025-09-01T15:56:33.2357497Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/strimzi-kafka-operator/strimzi-kafka-operator
+2025-09-01T15:56:33.2393707Z [command]/usr/bin/git config --local --get remote.origin.url
+2025-09-01T15:56:33.2413366Z https://github.com/Frawless/strimzi-kafka-operator
+2025-09-01T15:56:33.2426432Z ##[group]Removing previously created refs, to avoid conflicts
+2025-09-01T15:56:33.2431042Z [command]/usr/bin/git rev-parse --symbolic-full-name --verify --quiet HEAD
+2025-09-01T15:56:33.2451303Z refs/heads/sts-gha-fixes-v2
+2025-09-01T15:56:33.2460798Z [command]/usr/bin/git checkout --detach
+2025-09-01T15:56:33.3159789Z HEAD is now at da84632 Rewrite parse-comment to js
+2025-09-01T15:56:33.3207060Z [command]/usr/bin/git branch --delete --force sts-gha-fixes-v2
+2025-09-01T15:56:33.3232075Z Deleted branch sts-gha-fixes-v2 (was da84632).
+2025-09-01T15:56:33.3237905Z ##[endgroup]
+2025-09-01T15:56:33.3242361Z [command]/usr/bin/git submodule status
+2025-09-01T15:56:33.3462681Z ##[group]Cleaning the repository
+2025-09-01T15:56:33.3466926Z [command]/usr/bin/git clean -ffdx
+2025-09-01T15:56:33.3596733Z [command]/usr/bin/git reset --hard HEAD
+2025-09-01T15:56:33.4836965Z HEAD is now at da84632 Rewrite parse-comment to js
+2025-09-01T15:56:33.4845872Z ##[endgroup]
+2025-09-01T15:56:33.4848921Z ##[group]Disabling automatic garbage collection
+2025-09-01T15:56:33.4855578Z [command]/usr/bin/git config --local gc.auto 0
+2025-09-01T15:56:33.4888444Z ##[endgroup]
+2025-09-01T15:56:33.4889060Z ##[group]Setting up auth
+2025-09-01T15:56:33.4899144Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-09-01T15:56:33.4932601Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-09-01T15:56:33.5173348Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-09-01T15:56:33.5194596Z http.https://github.com/.extraheader
+2025-09-01T15:56:33.5204139Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-09-01T15:56:33.5234981Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-09-01T15:56:33.5456149Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-09-01T15:56:33.5490028Z ##[endgroup]
+2025-09-01T15:56:33.5490751Z ##[group]Fetching the repository
+2025-09-01T15:56:33.5506351Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +refs/pull/10/merge:refs/remotes/pull/10/merge
+2025-09-01T15:56:33.8915516Z From https://github.com/Frawless/strimzi-kafka-operator
+2025-09-01T15:56:33.8916650Z  * [new ref]         refs/pull/10/merge -> pull/10/merge
+2025-09-01T15:56:33.8946008Z ##[endgroup]
+2025-09-01T15:56:33.8946618Z ##[group]Determining the checkout info
+2025-09-01T15:56:33.8950362Z ##[endgroup]
+2025-09-01T15:56:33.8954968Z [command]/usr/bin/git sparse-checkout disable
+2025-09-01T15:56:33.9591323Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2025-09-01T15:56:33.9620723Z ##[group]Checking out the ref
+2025-09-01T15:56:33.9625124Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/10/merge
+2025-09-01T15:56:34.0856399Z Previous HEAD position was da84632 Rewrite parse-comment to js
+2025-09-01T15:56:34.0859951Z HEAD is now at 195281a Merge ef61a7f84f7f0b58146cdfce4845b4d7f4da0867 into da846320e9abadd3a2c7ec36a54157f87200566f
+2025-09-01T15:56:34.0932794Z ##[endgroup]
+2025-09-01T15:56:34.0942062Z [command]/usr/bin/git log -1 --format=%H
+2025-09-01T15:56:34.0943228Z 195281a644246e86c0f8d78312073c6b0bf09a6b
+2025-09-01T15:56:34.1165914Z Prepare all required actions
+2025-09-01T15:56:34.1166260Z Getting action download info
+2025-09-01T15:56:34.2481035Z Download action repository 'actions/github-script@v7' (SHA:60a0d83039c74a4aee543508d2ffcb1c3799cdea)
+2025-09-01T15:56:34.7182123Z ##[group]Run ./.github/actions/parse-comment
+2025-09-01T15:56:34.7182400Z with:
+2025-09-01T15:56:34.7182562Z env:
+2025-09-01T15:56:34.7182741Z   REF: refs/pull/10/merge
+2025-09-01T15:56:34.7182945Z   SHA: HEAD
+2025-09-01T15:56:34.7183106Z ##[endgroup]
+2025-09-01T15:56:34.7245166Z ##[group]Run actions/github-script@v7
+2025-09-01T15:56:34.7245469Z with:
+2025-09-01T15:56:34.7246633Z   script: const ev = context.eventName;
+const body = context.payload?.comment?.body ?? '';
+let shouldRun = false;
+
+if (ev === 'workflow_dispatch') {
+  shouldRun = true;
+} else if (ev === 'issue_comment' && context.payload?.issue?.pull_request) {
+  shouldRun = /^\s*\/gha\s+run\b/i.test(body || '');
+}
+
+core.setOutput('shouldRun', String(shouldRun));
+core.info(`Parsed shouldRun: ${shouldRun}`);
+
+2025-09-01T15:56:34.7248318Z   github-token: ***
+2025-09-01T15:56:34.7248520Z   debug: false
+2025-09-01T15:56:34.7248722Z   user-agent: actions/github-script
+2025-09-01T15:56:34.7248961Z   result-encoding: json
+2025-09-01T15:56:34.7249152Z   retries: 0
+2025-09-01T15:56:34.7249355Z   retry-exempt-status-codes: 400,401,403,404,422
+2025-09-01T15:56:34.7249613Z env:
+2025-09-01T15:56:34.7249773Z   REF: refs/pull/10/merge
+2025-09-01T15:56:34.7249969Z   SHA: HEAD
+2025-09-01T15:56:34.7250131Z ##[endgroup]
+2025-09-01T15:56:34.8072067Z Parsed shouldRun: false
+2025-09-01T15:56:34.8175677Z ##[group]Run actions/github-script@v7
+2025-09-01T15:56:34.8175945Z with:
+2025-09-01T15:56:34.8176985Z   script: const body = context.payload?.comment?.body ?? '';
+const fallback = `/gha run profile=${process.env.INPUT_PROFILE} kafkaVersion=${process.env.INPUT_KAFKA_VERSION}`;
+const builtComment = (body && body.trim().length) ? body : fallback;
+
+core.setOutput('builtComment', builtComment);
+core.info(`Parsed builtComment: ${builtComment}`);
+
+2025-09-01T15:56:34.8178456Z   github-token: ***
+2025-09-01T15:56:34.8178664Z   debug: false
+2025-09-01T15:56:34.8178857Z   user-agent: actions/github-script
+2025-09-01T15:56:34.8179109Z   result-encoding: json
+2025-09-01T15:56:34.8179299Z   retries: 0
+2025-09-01T15:56:34.8179507Z   retry-exempt-status-codes: 400,401,403,404,422
+2025-09-01T15:56:34.8179762Z env:
+2025-09-01T15:56:34.8179931Z   REF: refs/pull/10/merge
+2025-09-01T15:56:34.8180130Z   SHA: HEAD
+2025-09-01T15:56:34.8180292Z   INPUT_PROFILE:
+2025-09-01T15:56:34.8180480Z   INPUT_KAFKA_VERSION:
+2025-09-01T15:56:34.8180667Z ##[endgroup]
+2025-09-01T15:56:34.9015087Z Parsed builtComment: one more tiiiiime
+2025-09-01T15:56:34.9015522Z
+2025-09-01T15:56:34.9015657Z ```
+2025-09-01T15:56:34.9015966Z hohoho
+2025-09-01T15:56:34.9016251Z ```
+2025-09-01T15:56:34.9125080Z ##[group]Run actions/github-script@v7
+2025-09-01T15:56:34.9125340Z with:
+2025-09-01T15:56:34.9132133Z   script: const comment = `one more tiiiiime
+
+```
+hohoho
+````;
+
+// Remove all backticks from the comment
+const sanitized = comment.replace(/`/g, '');
+
+// Create one-line comment in case it is multi-line
+const flat   = sanitized.replace(/\s+/g, ' ').trim();
+
+// Create lower-case
+const lower  = flat.toLowerCase();
+
+// Check whether the comment starts with /gha run
+const starts = /^\s*\/gha\s+run\b/i.test(sanitized);
+
+// Function for getting parameter from string
+const getParameter = (key, src = flat) => {
+  const regex = new RegExp(`\\b${key}=("([^"]*)"|'([^']*)'|([^\\s]+))`, 'i');
+  const match = src.match(regex);
+  if (!match) {
+    return '';
+  }
+  return match[2] ?? match[3] ?? match[4] ?? '';
+};
+
+const DEFAULTS = {
+  pipelines:    'regression,upgrade',
+  profiles:     'operators,operands,brokers-and-security,azp_kraft_upgrade,azp_kafka_upgrade',
+  featureGate:  '+DummyFeatureGate',
+  rbacScope:    'CLUSTER',
+  installType:  'yaml',
+  parallel:     '1',
+  kafkaVersion: 'latest',
+  kubeVersion:  'latest',
+};
+
+let pipelineList = '', profileList = '';
+if (starts) {
+  const pipe = getParameter('pipeline', lower);
+  const prof = getParameter('profile',  lower);
+  if (pipe) {
+    pipelineList = pipe;
+  } else {
+    profileList = prof || DEFAULTS.profiles;
+  }
+}
+
+const out = {
+  pipelineList,
+  profileList,
+  agent:                         getParameter('agent', lower),
+  architecture:                  getParameter('architecture', lower),
+  strimzi_feature_gates:         getParameter('strimzi_feature_gates', sanitized), // keep case
+  strimzi_rbac_scope:            getParameter('strimzi_rbac_scope',  sanitized),  // keep case
+  cluster_operator_install_type: getParameter('cluster_operator_install_type', lower) || DEFAULTS.installType,
+  parallel:                      getParameter('parallel', lower) || DEFAULTS.parallel,
+  groups:                        getParameter('groups', lower),
+  tests:                         getParameter('tests', lower),
+  kafkaVersion:                  getParameter('kafkaversion', lower) || DEFAULTS.kafkaVersion,
+  kubeVersion:                   getParameter('kubeversion',  lower) || DEFAULTS.kubeVersion,
+  releaseVersion:                process.env.INPUT_RELEASE_VERSION || 'latest',
+};
+
+if (starts && !out.pipelineList && !out.profileList) {
+  out.profileList = DEFAULTS.profiles;
+}
+
+// Export collected data as outputs
+for (const [k, v] of Object.entries(out)) {
+  core.setOutput(k, v);
+}
+
+core.info(`Parsed:\n${JSON.stringify(out, null, 2)}`);
+
+2025-09-01T15:56:34.9139222Z   github-token: ***
+2025-09-01T15:56:34.9139415Z   debug: false
+2025-09-01T15:56:34.9139615Z   user-agent: actions/github-script
+2025-09-01T15:56:34.9139873Z   result-encoding: json
+2025-09-01T15:56:34.9140068Z   retries: 0
+2025-09-01T15:56:34.9140270Z   retry-exempt-status-codes: 400,401,403,404,422
+2025-09-01T15:56:34.9140531Z env:
+2025-09-01T15:56:34.9140703Z   REF: refs/pull/10/merge
+2025-09-01T15:56:34.9140909Z   SHA: HEAD
+2025-09-01T15:56:34.9141070Z   INPUT_PROFILE:
+2025-09-01T15:56:34.9141257Z   INPUT_KAFKA_VERSION:
+2025-09-01T15:56:34.9141458Z   INPUT_RELEASE_VERSION:
+2025-09-01T15:56:34.9141656Z ##[endgroup]
+2025-09-01T15:56:34.9992457Z TypeError: "one more tiiiiime
+2025-09-01T15:56:34.9992853Z
+2025-09-01T15:56:34.9992987Z " is not a function
+2025-09-01T15:56:34.9993747Z     at eval (eval at callAsyncFunction (/home/runner/work/_actions/actions/github-script/v7/dist/index.js:35424:16), <anonymous>:5:2)
+2025-09-01T15:56:34.9994617Z     at callAsyncFunction (/home/runner/work/_actions/actions/github-script/v7/dist/index.js:35425:12)
+2025-09-01T15:56:34.9995289Z     at main (/home/runner/work/_actions/actions/github-script/v7/dist/index.js:35522:26)
+2025-09-01T15:56:34.9995862Z     at /home/runner/work/_actions/actions/github-script/v7/dist/index.js:35497:1
+2025-09-01T15:56:34.9996396Z     at /home/runner/work/_actions/actions/github-script/v7/dist/index.js:35553:3
+2025-09-01T15:56:34.9997116Z     at Object.<anonymous> (/home/runner/work/_actions/actions/github-script/v7/dist/index.js:35556:12)
+2025-09-01T15:56:34.9997725Z     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-01T15:56:34.9998328Z     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-01T15:56:34.9998787Z     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-01T15:56:34.9999319Z     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-01T15:56:35.0018907Z ##[error]Unhandled error: TypeError: "one more tiiiiime
+
+" is not a function
+2025-09-01T15:56:35.0159998Z Post job cleanup.
+2025-09-01T15:56:35.0948062Z [command]/usr/bin/git version
+2025-09-01T15:56:35.0983019Z git version 2.51.0
+2025-09-01T15:56:35.1018729Z Temporarily overriding HOME='/home/runner/work/_temp/08aa01ee-a0ea-4517-8b8e-2a44547d9e79' before making global git config changes
+2025-09-01T15:56:35.1019721Z Adding repository directory to the temporary git global config as a safe directory
+2025-09-01T15:56:35.1024275Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/strimzi-kafka-operator/strimzi-kafka-operator
+2025-09-01T15:56:35.1059363Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-09-01T15:56:35.1092074Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-09-01T15:56:35.1316727Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-09-01T15:56:35.1337711Z http.https://github.com/.extraheader
+2025-09-01T15:56:35.1347724Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-09-01T15:56:35.1377944Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-09-01T15:56:35.1735848Z Post job cleanup.
+2025-09-01T15:56:35.2554967Z [command]/usr/bin/git version
+2025-09-01T15:56:35.2604700Z git version 2.51.0
+2025-09-01T15:56:35.2657113Z Temporarily overriding HOME='/home/runner/work/_temp/30dc2bc6-b428-41ac-8ccb-bd81d0ccc059' before making global git config changes
+2025-09-01T15:56:35.2659825Z Adding repository directory to the temporary git global config as a safe directory
+2025-09-01T15:56:35.2664608Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/strimzi-kafka-operator/strimzi-kafka-operator
+2025-09-01T15:56:35.2704771Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-09-01T15:56:35.2741628Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-09-01T15:56:35.2984595Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-09-01T15:56:35.3020672Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-09-01T15:56:35.3366585Z Evaluate and set job outputs
+2025-09-01T15:56:35.3378931Z Set output 'shouldRun'
+2025-09-01T15:56:35.3380704Z Set output 'ref'
+2025-09-01T15:56:35.3381295Z Set output 'sha'
+2025-09-01T15:56:35.3382298Z Cleaning up orphan processes
