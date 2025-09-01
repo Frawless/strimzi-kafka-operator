@@ -144,7 +144,7 @@ scenarios:
       profiles: ""
       tests: ""
       groups: ""
-      kafka: ""
+      kafka: "latest"
       strimzi_feature_gates: ""
       strimzi_rbac_scope: ""
       cluster_operator_install_type: "yaml"
@@ -213,7 +213,7 @@ scenarios:
       cluster_operator_install_type: "yaml"
       tests: ""
       groups: ""
-      kafka: ""
+      kafka: "latest"
       release: "latest"
       should_run: "true"
       kube: "latest"
@@ -224,7 +224,7 @@ scenarios:
     fixture: .github/tests/events/parse-comment/issue_comment_backticks.json
     expectations:
       pipelines: ""
-      profiles: "operators"
+      profiles: ""
       tests: ""
       groups: ""
       kafka: "3.8.0"
