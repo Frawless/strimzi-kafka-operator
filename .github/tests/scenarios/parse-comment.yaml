@@ -217,3 +217,20 @@ scenarios:
       release: "latest"
       should_run: "true"
       kube: "latest"
+
+  - id: comment-with-backticks
+    description: "Comment with backticks and code blocks"
+    event: issue_comment
+    fixture: .github/tests/events/parse-comment/issue_comment_backticks.json
+    expectations:
+      pipelines: ""
+      profiles: "operators"
+      tests: ""
+      groups: ""
+      kafka: "3.8.0"
+      strimzi_feature_gates: "+DummyFeatureGate"
+      strimzi_rbac_scope: "CLUSTER"
+      cluster_operator_install_type: "yaml"
+      should_run: "false"
+      kube: "latest"
+      release: "latest"

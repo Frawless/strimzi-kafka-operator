@@ -102,7 +102,7 @@ runs:
         INPUT_PROFILE: ${{ inputs.profile }}
         INPUT_KAFKA_VERSION: ${{ inputs.kafkaVersion }}
         INPUT_RELEASE_VERSION: ${{ inputs.releaseVersion }}
-        BUILT_COMMENT: ${{ steps.build_comment.outputs.builtComment }
+        BUILT_COMMENT: ${{ steps.build_comment.outputs.builtComment }}
       with:
         script: |
           const comment = process.env.BUILT_COMMENT;
