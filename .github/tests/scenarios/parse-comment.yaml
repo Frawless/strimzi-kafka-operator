@@ -123,8 +123,8 @@ scenarios:
     event: issue_comment
     fixture: .github/tests/events/parse-comment/issue_comment_8.json
     expectations:
-      pipelines: "regression,upgrade"
-      profiles: ""
+      pipelines: ""
+      profiles: "custom-profile"
       tests: ""
       groups: ""
       kafka: "latest"
