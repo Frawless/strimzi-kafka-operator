@@ -102,11 +102,13 @@ runs:
     - name: Parse Comment
       id: parse_comment
       shell: bash
+      env:
+        BUILT_COMMENT: ${{ steps.build_comment.outputs.builtComment }}
       run: |
         set -e
         
-        # Read the comment body
-        COMMENT="${{ steps.build_comment.outputs.builtComment }}"
+        # Read the comment body safely from environment variable
+        COMMENT="$BUILT_COMMENT"
         COMMENT_LOWER=$(echo "$COMMENT" | tr '[:upper:]' '[:lower:]')
         
         # Default values
