@@ -111,7 +111,7 @@ scenarios:
       tests: ""
       groups: ""
       kafka: "latest"
-      strimzi_feature_gates: "+DummyFeatureGate"
+      strimzi_feature_gates: ""
       strimzi_rbac_scope: ""
       cluster_operator_install_type: "yaml"
       should_run: "true"
