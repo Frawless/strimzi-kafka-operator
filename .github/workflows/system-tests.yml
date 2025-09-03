@@ -20,6 +20,12 @@ on:
   # Automated trigger for issue comment
   issue_comment:
     types: [created]
+  # Testing trigger for PRs - tests workflow changes
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - '.github/workflows/run-system-tests.yml'
+      - '.github/workflows/system-tests.yml'
 
 permissions:
   contents: read
@@ -180,7 +186,11 @@ jobs:
         uses: ./.github/actions/add-comment
         with:
           commentMessage: |
-            ${{ needs.run-tests.result == 'success' && ':tada: System test verification **passed**' || needs.run-tests.result == 'failure' && ':x: System test verification **failed**' || ':warning: System test verification **skipped**' }}: [link](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            ${{
+              (needs.run-tests.result == 'success' && ':tada: System test verification **passed**') ||
+              (needs.run-tests.result == 'failure' && ':x: System test verification **failed**') ||
+              ':warning: System test verification **skipped**'
+            }}: [link](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
       - name: Set check & commit status
         uses: ./.github/actions/check-and-status
         with:

@@ -1,0 +1,72 @@
+name: "Run"
+description: "Run system tests"
+
+inputs:
+  agent:
+    description: "Agent type for the test run"
+    required: true
+  pipeline:
+    description: "Pipeline name for the test run"
+    required: true
+  profile:
+    description: "Test profile to run"
+    required: true
+  groups:
+    description: "JUnit5 test groups to run"
+    required: true
+  tests:
+    description: "Specific tests to run"
+    required: true
+  excludedGroups:
+    description: "Test groups to exclude"
+    required: true
+  parallel:
+    description: "Number of parallel test executions"
+    required: false
+    default: "1"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run systemtests
+      id: run_tests
+      shell: bash
+      run: |
+        mvn -f systemtest/pom.xml verify \
+          -P"${{ inputs.profile }}" \
+          -DexcludedGroups="${{ inputs.excludedGroups }}" \
+          $GROUPS_OPT \
+          $TESTS_OPT \
+          -Dmaven.javadoc.skip=true \
+          -B -V \
+          -Dfailsafe.rerunFailingTestsCount=1 \
+          -Djunit.jupiter.execution.parallel.enabled="$([[ ${{ inputs.parallel }} -gt 1 ]] && echo true || echo false)" \
+          -Djunit.jupiter.execution.parallel.config.fixed.parallelism="${{ inputs.parallel }}" \
+          -Dskip.surefire.tests \
+          -s ./.azure/systemtests/systemtest-settings.xml
+      env:
+        DOCKER_TAG: ${{ env.DOCKER_TAG }}
+        BRIDGE_IMAGE: "latest-released"
+        DOCKER_REGISTRY: ${{ env.DOCKER_REGISTRY }}
+        BUILD_ID: ${{ inputs.agent }}-${{ inputs.pipeline }}-${{ inputs.profile }}-systemtests
+        RESOURCE_ALLOCATION_STRATEGY: "SHARE_MEMORY_FOR_ALL_COMPONENTS"
+        TEST_LOG_DIR: "systemtest-logs"
+        CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN: ${{ env.CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN }}
+        # Build the switch only when the input is non-empty
+        GROUPS_OPT: ${{ inputs.groups != '' && format('-Dgroups="{0}"', inputs.groups) || '' }}
+        TESTS_OPT: ${{ inputs.tests  != '' && format('-Dit.test="{0}"',  inputs.tests)  || '' }}
+        STRIMZI_TEST_LOG_LEVEL: INFO
+
+    - name: Archive JUnit test results
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: junit-results-${{ inputs.pipeline }}-${{ inputs.profile }}-${{ inputs.agent }}
+        path: systemtest/target/failsafe-reports/**/TEST-*.xml
+
+    - name: Archive systemtest logs
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: systemtest-logs-${{ inputs.pipeline }}-${{ inputs.profile }}-${{ inputs.agent }}
+        path: systemtest-logs

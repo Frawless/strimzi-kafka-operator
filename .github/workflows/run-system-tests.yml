@@ -144,190 +144,26 @@ jobs:
           checkName: ${{ matrix.config.jobName }}
           checkDescription: "Test run for ${{ matrix.config.jobName }}"
 
-      - name: Set up Maven
-        uses: stCarolas/setup-maven@v5
-        with:
-          maven-version: 3.9.9
-      - uses: actions/setup-java@v5
-        with:
-          distribution: "temurin"
-          java-version: "17"
-          cache: 'maven'
-
-      - name: Install Helm
-        uses: ./.github/actions/install-helm
-
-      - name: Install Shellcheck
-        uses: ./.github/actions/install-shellcheck
+      - name: Prepare systemtests env
+        uses: ./.github/actions/systemtests/prepare-env
         with:
           architecture: ${{ matrix.config.arch }}
-      - name: Install yq
-        uses: ./.github/actions/install-yq
-        with:
-          architecture: ${{ matrix.config.arch }}
-
-      - name: Install Docker
-        uses: ./.github/actions/install-docker
-
-      - name: Install Kind
-        uses: ./.github/actions/setup-kind
-        with:
-          architecture: ${{ matrix.config.arch }}
-          # Could be overriden per pipeline
-          controlNodes: 1
-          workerNodes: 1
-
-      - name: Set default environment variables
-        uses: ./.github/actions/set-defaults
-
-      - name: Set release version
-        if: ${{ inputs.releaseVersion != 'latest' }}
-        run: |
-          echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
-        env:
-          RELEASE_VERSION: ${{ inputs.releaseVersion }}
-
-      - name: Set DOCKER_TAG to releaseVersion
-        if: ${{ inputs.releaseVersion != 'latest' }}
-        run: |
-          echo "DOCKER_TAG=${{ inputs.releaseVersion }}" >> $GITHUB_ENV
-
-      - name: Set DOCKER_REGISTRY to quay.io if releaseVersion != latest
-        if: ${{ inputs.releaseVersion != 'latest' }}
-        run: |
-          echo "DOCKER_REGISTRY=quay.io" >> $GITHUB_ENV
-
-      - name: Set ST_KAFKA_VERSION if kafkaVersion != latest
-        if: ${{ env.KAFKA_VERSION != 'latest' }}
-        run: |
-          echo "ST_KAFKA_VERSION=${KAFKA_VERSION}" >> $GITHUB_ENV
-
-      - name: Print out environment info
-        uses: ./.github/actions/log-variables
-
-      # Load Strimzi images
-      - name: Load Strimzi images
-        if: ${{ env.DOCKER_TAG == 'latest' && github.ref_name != 'main' }}
-        uses: ./.github/actions/containers-load
-        with:
-          architecture: ${{ matrix.config.arch }}
-          registry: "kind"
-
-      - name: Cache local Maven repository
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: "maven-cache | **/pom.xml"
-          restore-keys: |
-            maven | ${{ github.job }}
-            maven
-
-      # Build Strimzi without images => used when running the STs against releases or release candidates where the images
-      # are already built, and we need only the Java build
-      - name: Build Strimzi Java code
-        run: make java_install
-        env:
-          MVN_ARGS: "-DskipTests -Dmaven.javadoc.skip=true  -e -V -B"
-
-      - name: Create dir for Kafka binaries cache
-        if: ${{ env.DOCKER_TAG != 'latest' }}
-        run: mkdir -p docker-images/artifacts/binaries/kafka/archives
-
-      ############################################################################
-      # Build KafkaConnect image with file-sink plugin, skipping if "upgrade"
-      ############################################################################
-      - name: Build KafkaConnect image
-        # we want to let Connect image build for different versions of Kafka inside the upgrade/downgrade STs
-        if: ${{ !contains(env.PROFILE, 'upgrade') }}
-        run: |
-          CONNECT_IMAGE="${DOCKER_REGISTRY}/${DOCKER_ORG}/connect-file-sink:latest"
-          KAFKA_VERSION=$([[ "${KAFKA_VERSION}" == *"latest"* ]] && yq eval '.[] | select(.default) | .version' kafka-versions.yaml || echo "${KAFKA_VERSION}")
-          BASE_IMAGE="${DOCKER_REGISTRY}/${DOCKER_ORG}/kafka:${DOCKER_TAG}-kafka-${KAFKA_VERSION}"
-          
-          echo "Base image: $BASE_IMAGE"
-          eval "$(./systemtest/src/test/resources/connect-build/build-connect-image.sh "$KAFKA_VERSION" "$BASE_IMAGE" "$CONNECT_IMAGE")"
-          echo "connect build image: $CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN"
-          
-          # Push the images
-          docker push ${CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN}
-
-          # Provide "connectImage" variable for tests:
-          echo "CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN=${CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN}" >> $GITHUB_ENV
-
-      ############################################################################
-      # We need to set DOCKER_REGISTRY to IP and port of service, which is created by minikube registry addon, port is always 80
-      # Default value for PRs is localhost:5000 because we need to push built images into minikube registry and make them available for pods
-      ############################################################################
-      - name: "Set docker_registry to local registry in minikube"
-        if: ${{ contains(env.DOCKER_REGISTRY, 'localhost:5000') }}
-        run: |
-          echo "DOCKER_REGISTRY=$(kubectl get service registry -n kube-system -o=jsonpath='{.spec.clusterIP}'):80" >> $GITHUB_ENV
-
-      ############################################################################
-      # Additional "setup_upgrade.sh" if profile includes "upgrade"
-      ############################################################################
-      - name: Setup environment for upgrade
-        if: ${{ contains(env.PROFILE, 'upgrade') }}
-        run: |
-          .azure/scripts/setup_upgrade.sh
-
-      ############################################################################
-      # Set KAFKA_TIERED_STORAGE_BASE_IMAGE for Tiered Storage tests
-      ############################################################################
-      - name: Set KAFKA_TIERED_STORAGE_BASE_IMAGE
-        run: |
-          KAFKA_VERSION=$([[ "${KAFKA_VERSION}" == *"latest"* ]] && yq eval '.[] | select(.default) | .version' kafka-versions.yaml || echo "${KAFKA_VERSION}")
-          echo "KAFKA_TIERED_STORAGE_BASE_IMAGE=${DOCKER_REGISTRY}/${DOCKER_ORG}/kafka:${DOCKER_TAG}-kafka-${KAFKA_VERSION}" >> $GITHUB_ENV
-
-      - name: Print out environment info
-        uses: ./.github/actions/log-variables
+          releaseVersion: ${{ inputs.releaseVersion }}
+          ref: ${{ inputs.ref }}
 
       ############################################################################
       # Run system tests
       ############################################################################
-      - name: Run systemtests
-        id: run_tests
-        timeout-minutes: ${{ fromJson(matrix.config.timeout) }}
-        run: |
-          mvn -f systemtest/pom.xml verify \
-            -P"${PROFILE}" \
-            -DexcludedGroups="${EXCLUDED_GROUPS}" \
-            $GROUPS_OPT \
-            $TESTS_OPT \
-            -Dmaven.javadoc.skip=true \
-            -B -V \
-            -Dfailsafe.rerunFailingTestsCount=1 \
-            -Djunit.jupiter.execution.parallel.enabled="$([[ ${PARALLEL:-1} -gt 1 ]] && echo true || echo false)" \
-            -Djunit.jupiter.execution.parallel.config.fixed.parallelism="${PARALLEL}" \
-            -Dskip.surefire.tests \
-            -s ./.azure/systemtests/systemtest-settings.xml
-        env:
-          DOCKER_TAG: ${{ env.DOCKER_TAG }}
-          BRIDGE_IMAGE: "latest-released"
-          DOCKER_REGISTRY: ${{ env.DOCKER_REGISTRY }}
-          BUILD_ID: ${{ matrix.config.agent }}-${{ matrix.config.pipeline }}-${{ matrix.config.profile }}-systemtests
-          RESOURCE_ALLOCATION_STRATEGY: "SHARE_MEMORY_FOR_ALL_COMPONENTS"
-          TEST_LOG_DIR: "systemtest-logs"
-          CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN: ${{ env.CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN }}
-          # Build the switch only when the input is non-empty
-          GROUPS_OPT: ${{ inputs.groups != '' && format('-Dgroups="{0}"', inputs.groups) || '' }}
-          TESTS_OPT: ${{ inputs.tests  != '' && format('-Dit.test="{0}"',  inputs.tests)  || '' }}
-          EXCLUDED_GROUPS: ${{ matrix.config.excluded_groups || '' }}
-          STRIMZI_TEST_LOG_LEVEL: INFO
-
-      - name: Archive JUnit test results
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+      - name: Run & archive
+        uses: ./.github/actions/systemtests/run
         with:
-          name: junit-results-${{ matrix.config.pipeline }}-${{ matrix.config.profile }}-${{ matrix.config.agent }}
-          path: systemtest/target/failsafe-reports/**/TEST-*.xml
-
-      - name: Archive systemtest logs
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: systemtest-logs-${{ matrix.config.pipeline }}-${{ matrix.config.profile }}-${{ matrix.config.agent }}
-          path: systemtest-logs
+          agent: ${{ matrix.config.agent }}
+          pipeline: ${{ matrix.config.pipeline }}
+          profile: ${{ matrix.config.profile }}
+          groups: ${{ inputs.groups }}
+          tests: ${{ inputs.tests }}
+          excludedGroups: ${{ inputs.excludedGroups }}
+          parallel: ${{ inputs.parallel }}
 
       - name: Set check & commit status
         if: ${{ always() }}

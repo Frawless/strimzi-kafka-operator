@@ -13,7 +13,7 @@ inputs:
   profile:
     description: "Comma-separated or single profile name(s)"
     required: false
-    default: ""
+    default: "smoke"
 
 outputs:
   pipelineList:
