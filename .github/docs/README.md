@@ -152,3 +152,5 @@ Every generated `GITHUB_TOKEN` has only read access to the repo/org without acce
 Unit and integration tests invoked via [actions-tests.yml](../workflows/actions-tests.yml) workflow.
 It uses files specified within [tests](../tests) folder and via [act](https://github.com/nektos/act) it tries to execute the actions and check the outputs.
 Currently, we tests `check-permissions`, `generate-matrix`, and `parse-comment` actions.
+
+# Test
