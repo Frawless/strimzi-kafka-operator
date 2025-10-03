@@ -2,6 +2,7 @@
 The following lines put together basic information how is Strimzi built and tested via GitHub Actions.
 Currently, our main build system still lives on Azure Pipelines and running builds and tests on GHA is in experimental phase.
 All the steps mentioned bellow re-use scripts from our [azure](../../.azure) directory and thus all the steps are more or less the same on both systems.
+#TEST
 
 ## Build jar artifacts
 Building Strimzi is exactly the same as we have in Azure pipelines.
