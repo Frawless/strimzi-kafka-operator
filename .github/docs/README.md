@@ -10,7 +10,7 @@ Strimzi jars are built on `oracle-2cpu-8gb-arm64` runner as part of [build-strim
 This runner is basically a Kubernetes pod that runs all the commands defined in the action.
 
 Action output is tar-ball with Strimzi jars that can be used by other actions and workflows.
-
+# TEST
 Usage example can be like this:
 
 ```yaml
