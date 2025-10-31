@@ -2,6 +2,8 @@
 The following lines put together basic information how is Strimzi built and tested via GitHub Actions.
 All the steps mentioned bellow re-use scripts from our [azure](../../.azure) directory and thus all the steps are more or less the same on both systems.
 
+## Test
+
 ## Build jar artifacts
 Building Strimzi is exactly the same as we have in Azure pipelines.
 Only difference is in used runners for each step.
